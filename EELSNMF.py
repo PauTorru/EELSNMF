@@ -257,6 +257,7 @@ class EELSNMF:
 
 
 	def decomposition(self,n_comps,W_init=None):
+		self.error_log=[]
 		self.X = self.cl.data.reshape((-1,self.energy_size)).T
 		#self.cl.decomposition()
 		#GW = self.cl.get_decomposition_factors().data.T[:,:n_comps]
@@ -300,6 +301,7 @@ class EELSNMF:
 		    self.H*=num/denum
 
 		    error = abs(self.X-self.G@self.W@self.H).sum()
+		    self.error_log.append(error)
 
 		    if error_0-error<=self.tol and i>2:
 		    	pass
