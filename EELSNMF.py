@@ -55,7 +55,8 @@ class EELSNMF:
 														fine_structure_ranges = None,
 														ll_convolve = False,
 														max_iters=100,
-														tol=1e-5):
+														tol=1e-5,
+														xsection_type="Kohl"):
 
 		"""
 		Parameters
@@ -96,6 +97,7 @@ class EELSNMF:
 
 
 		"""
+		self.xsection_type=xsection_type
 		self.tol=tol
 		self.max_iters=max_iters
 		self.ll_convolve = ll_convolve
@@ -153,7 +155,7 @@ class EELSNMF:
 
 
 	def build_G(self):
-
+		self.energy_axis=self.cl.axes_manager[-1].axis
 		if len(self.cl.data.shape)==2:
 			p,e=self.cl.data.shape
 			hl = em.MultiSpectrum.from_numpy(self.cl.data.reshape((1,p,e)),self.cl.axes_manager[-1].axis)
@@ -167,9 +169,16 @@ class EELSNMF:
 		for edge in self.edges:
 
 			element,edge_type = edge.split("_")
+			if self.xsection_type == "Zezhong":
 
-			x = ZezhongCoreLossEdgeCombined(hl.get_spectrumshape(),
-				1,self.E0,self.alpha,self.beta,element,edge_type)
+				x = ZezhongCoreLossEdgeCombined(hl.get_spectrumshape(),
+					1,self.E0,self.alpha,self.beta,element,edge_type)
+			elif self.xsection_type == "Kohl":
+				x = KohlLossEdgeCombined(hl.get_spectrumshape(),
+					1,self.E0,self.alpha,self.beta,element,edge_type)
+			else:
+				print("cross section type \"{}\" does not exist".format(self.xsection_type))
+
 
 			xs.append(x)
 
@@ -249,7 +258,7 @@ class EELSNMF:
 
 
 			freeGs.append(freeG)
-
+		self._Gstructure = [G.shape[1]]+[i.shape[1] for i in freeGs]
 		self.G = np.concatenate([G]+freeGs,axis=1)
 		self.G[self.G<0]=0
 
@@ -257,6 +266,7 @@ class EELSNMF:
 
 
 	def decomposition(self,n_comps,W_init=None):
+		self.n_comps=n_comps
 		self.error_log=[]
 		self.X = self.cl.data.reshape((-1,self.energy_size)).T
 		#self.cl.decomposition()
@@ -359,8 +369,11 @@ class EELSNMF:
 		"""
 		
 
-
-
+	def plot_factors(self):
+		plt.figure("Factors")
+		plt.clf()
+		for i in range(self.n_comps):
+			plt.plot(self.energy_axis,(self.G@self.W).T[i])
 
 
 
