@@ -19,6 +19,20 @@ from sklearn.decomposition._nmf import _initialize_nmf as initialize_nmf
 
 
 
+def load_decomposition(fname):
+	with open(fname,"rb") as f:
+		out = pkl.load(f)
+
+	d,x = out.cl
+	out.cl = hs.signals.Signal1D(out.cl[0])
+	out.cl.axes_manager[-1].offset = x[0]
+	out.cl.axes_manager[-1].scale = x[1]-x[0]
+
+	d,x = out.ll
+	out.ll = hs.signals.Signal1D(out.ll[0])
+	out.ll.axes_manager[-1].offset = x[0]
+	out.ll.axes_manager[-1].scale = x[1]-x[0]
+	return out
 
 
 
@@ -217,11 +231,15 @@ class EELSNMF:
 		freeGs=[]
 		print("Creating ELNES")
 		ne=-1
+
+
+
 		for k,v in self.fine_structure_ranges.items():
 			ne+=1
 
 			ii,ff = ax.value2index(v)
 			l = ff-ii+1
+
 			G[ii:ff,self.n_background+ne:]=0#ne is to only set to zero the corresponding edge
 
 			if not self.ll_convolve:
@@ -259,6 +277,18 @@ class EELSNMF:
 
 			freeGs.append(freeG)
 		self._Gstructure = [G.shape[1]]+[i.shape[1] for i in freeGs]
+
+
+		
+		self._edge_slices={}
+		self._W_edge_slices={}
+		cs = np.cumsum(self._Gstructure)
+
+		for i,k in enumerate(self.fine_structure_ranges.keys()):
+			self._edge_slices[k]=np.s_[:,cs[i]:cs[i+1]] # this gives you the slice to get a given edge: G[slice]@W[slice,comp] for and edge of a component
+			self._W_edge_slices[k]=np.s_[cs[i]:cs[i+1]]
+	
+
 		self.G = np.concatenate([G]+freeGs,axis=1)
 		self.G[self.G<0]=0
 
@@ -374,6 +404,33 @@ class EELSNMF:
 		plt.clf()
 		for i in range(self.n_comps):
 			plt.plot(self.energy_axis,(self.G@self.W).T[i])
+
+	def get_edge_from_component(self,component_id,edge):
+
+		out = self.G[self._edge_slices[edge]]@self.W[self._W_edge_slices[edge],component_id]
+
+		out = hs.signals.Signal1D(out)
+		out.axes_manager[-1].offset = self.energy_axis[0]
+		out.axes_manager[-1].scale = self.cl.axes_manager[-1].scale
+		out.axes_manager[-1].name = self.cl.axes_manager[-1].name
+		out.axes_manager[-1].units = self.cl.axes_manager[-1].units
+		return out
+
+	def save(self,fname):
+		temp = self.cl.deepcopy()
+		temp_ll = self.ll.deepcopy()
+		self.cl = (self.cl.data,self.cl.axes_manager[-1].axis)
+		self.ll = (self.ll.data,self.ll.axes_manager[-1].axis)
+
+		with open(fname,"wb") as f:
+			pkl.dump(self,f)
+
+		self.cl= temp
+		self.ll = temp_ll
+		return
+
+
+
 
 
 
