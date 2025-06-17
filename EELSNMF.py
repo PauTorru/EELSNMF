@@ -16,7 +16,7 @@ from pyEELSMODEL.components.gdoslin import GDOSLin
 from pyEELSMODEL.fitters.linear_fitter import LinearFitter
 import hyperspy.api as hs
 from sklearn.decomposition._nmf import _initialize_nmf as initialize_nmf
-
+import pandas as pd
 
 
 def load_decomposition(fname):
@@ -203,6 +203,13 @@ class EELSNMF:
 			rlist=np.linspace(1,self.n_background,self.n_background))
 
 		comp_list = [bg]+xs+[ll_comp]
+
+		self.xsection_idx={}
+		for i,edge in enumerate(self.edges):
+			element,edge_type=edge.split("_")
+			self.xsection_idx[edge]=i+self.n_background
+
+
 
 		self.model = em.Model(hl.get_spectrumshape(),components=comp_list)
 		self.em_fitter = LinearFitter(hl,self.model)
@@ -429,50 +436,23 @@ class EELSNMF:
 		self.ll = temp_ll
 		return
 
+	def quantify_components(self):
+		simplified_W=np.zeros((
+			len(self.edges),
+			self.W.shape[1]
+			))
+		for comp in range(self.W.shape[1]):
+			for i,kv in enumerate(self.xsection_idx.items()):
+				el,idx=kv
+				simplified_W[i,comp]=self.W[idx,comp]
 
 
+		simplified_W*=100/simplified_W.sum(0)[np.newaxis,:]
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-		
-
-
-
-
-
-
-
-
-
-
+		self.quantification = pd.DataFrame(simplified_W,
+			columns=["component_{}".format(i) for i in range(self.W.shape[1])],
+			index = [i.split("_")[0] for i in self.xsection_idx.keys()])
+		display(self.quantification)
 
 
 
