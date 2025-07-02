@@ -17,6 +17,7 @@ from pyEELSMODEL.fitters.linear_fitter import LinearFitter
 import hyperspy.api as hs
 from sklearn.decomposition._nmf import _initialize_nmf as initialize_nmf
 import pandas as pd
+import scipy as sc
 
 
 def load_decomposition(fname):
@@ -55,6 +56,43 @@ def load(fname):
 			return s,None
 	else:
 		raise Exception("File should contain either one (coreloss) or two (coreloss + lowloss) SIs. Insted there are {}".format(len(s)))
+
+
+def llconvolve(a,b):
+	"""1-d convolution. the shape of a,b has to be even.
+
+	Parameters
+	----------
+
+	a: np.array
+		Typically it will be a column of the unconvolved G matrix.
+
+	b: np.array
+		Typically it will be a single low loss spectrum
+
+
+	Returns
+	-------
+
+	C: np.array
+		Typically the low-loss convolved G row.
+
+		"""
+
+	assert a.shape==b.shape
+	assert a.shape[0]%2==0
+	assert b.shape[0]%2==0
+	assert len(a.shape)==1
+	assert len(b.shape)==1
+
+	d = a.shape[0]
+
+	o = b.argmax()
+	a_pad = np.pad(a,(d,d),mode="edge")
+	b_pad = np.pad(b,(0,o),mode="edge")
+	b_pad/=b_pad.sum()
+	conv = sc.signal.fftconvolve(a_pad,b_pad,mode="valid",axes=-1)[:d]
+	return conv
 
 
 
@@ -108,6 +146,9 @@ class EELSNMF:
 		tol: float
 			convergence tolerance on the error.
 
+		xsection_type: str
+			Wether to use "Kohl" or "Zezhong" cross section from pyEELSMODEL. "Kohl" uses the fast option.
+
 
 
 		"""
@@ -115,7 +156,7 @@ class EELSNMF:
 		self.tol=tol
 		self.max_iters=max_iters
 		self.ll_convolve = ll_convolve
-		self.ll = None #default
+
 		if isinstance(core_loss,str):
 			cl,ll = load(core_loss)
 			self.cl = cl
@@ -134,6 +175,8 @@ class EELSNMF:
 
 			else:
 				raise Exception("Bad low_loss argument")
+		else:
+			self.ll = None
 
 
 		self.edges = edges
@@ -169,45 +212,62 @@ class EELSNMF:
 
 
 	def build_G(self):
-		self.energy_axis=self.cl.axes_manager[-1].axis
+
+		############################## Create pyEELSMODEL SIs
 		if len(self.cl.data.shape)==2:
 			p,e=self.cl.data.shape
 			hl = em.MultiSpectrum.from_numpy(self.cl.data.reshape((1,p,e)),self.cl.axes_manager[-1].axis)
 		else:
 			hl = em.MultiSpectrum.from_numpy(self.cl.data,self.cl.axes_manager[-1].axis)
-		if self.ll:
-			ll = em.MultiSpectrum.from_numpy(self.ll.data,self.ll.axes_manager[-1].axis)
+
+			if self.ll:
+				
+				if len(self.ll.data.shape)==2:
+					p,e=self.ll.data.shape
+					ll = em.MultiSpectrum.from_numpy(self.ll.data.reshape((1,p,e)),self.ll.axes_manager[-1].axis)
+				else:
+					ll = em.MultiSpectrum.from_numpy(self.ll.data,self.ll.axes_manager[-1].axis)
+		##############################
+		############################## Create pyEELSMODEL xsections
 
 		xs=[]
-
 		for edge in self.edges:
-
 			element,edge_type = edge.split("_")
 			if self.xsection_type == "Zezhong":
-
 				x = ZezhongCoreLossEdgeCombined(hl.get_spectrumshape(),
 					1,self.E0,self.alpha,self.beta,element,edge_type)
 			elif self.xsection_type == "Kohl":
 				x = KohlLossEdgeCombined(hl.get_spectrumshape(),
-					1,self.E0,self.alpha,self.beta,element,edge_type)
+					1,self.E0,self.alpha,self.beta,element,edge_type,fast=True)
 			else:
 				print("cross section type \"{}\" does not exist".format(self.xsection_type))
-
-
 			xs.append(x)
-
-		ll_comp = MscatterFFT(ll.get_spectrumshape(),
-			ll,True,"edge","constant")
+		##############################
+		############################## Create pyEELSMODEL low loss and background
+		if self.ll:
+			ll_comp = MscatterFFT(ll.get_spectrumshape(),
+				ll,True,"edge","constant")
 
 		bg = LinearBG(hl.get_spectrumshape(),
 			rlist=np.linspace(1,self.n_background,self.n_background))
 
-		comp_list = [bg]+xs+[ll_comp]
+		##############################
+		############################## Create pyEELSMODEL low loss and background
 
+
+		comp_list = [bg]+xs#+[ll_comp] #Model without fine structure
+
+		if self.ll:
+			comp_list.append(ll_comp)
+
+		##############################
+		############################## Keep track of idx for each edge for quantification afterwards
 		self.xsection_idx={}
 		for i,edge in enumerate(self.edges):
 			element,edge_type=edge.split("_")
 			self.xsection_idx[edge]=i+self.n_background
+		##############################
+		############################## 
 
 
 
@@ -215,13 +275,15 @@ class EELSNMF:
 		self.em_fitter = LinearFitter(hl,self.model)
 
 		if self.ll_convolve==True:
-			#Full deconvolution
-			print("Implemention pending")
+			#Full G matrix convolution
+			self.full_G_convolution()# creates self.GX and self.GG
 			return
 		elif self.ll_convolve==False:
+			print("Calculating G elements")
 			self.em_fitter.calculate_A_matrix()
 
 			G = self.em_fitter.A_matrix.copy()
+			print("Done")
 
 		elif isinstance(self.ll_convolve,tuple):
 			self.em_fitter.calculate_A_matrix()
@@ -301,7 +363,6 @@ class EELSNMF:
 
 
 
-
 	def decomposition(self,n_comps,W_init=None):
 		self.n_comps=n_comps
 		self.error_log=[]
@@ -322,8 +383,9 @@ class EELSNMF:
 		self.W[np.isinf(self.W)]=1e-10
 
 		#fixed products
-		self.GtX = self.G.T@self.X
-		self.GtG = self.G.T@self.G
+		if not hasattr(self,"GtX") and not hasattr(self,"GtG"): # in case of full deconvolution they are already created
+			self.GtX = self.G.T@self.X
+			self.GtG = self.G.T@self.G
 
 
 		error_0 = abs(self.X-self.G@self.W@self.H).sum()
