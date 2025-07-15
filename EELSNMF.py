@@ -58,7 +58,7 @@ def load(fname):
 		raise Exception("File should contain either one (coreloss) or two (coreloss + lowloss) SIs. Insted there are {}".format(len(s)))
 
 
-def llconvolve(a,b):
+def convolve(a,b):
 	"""1-d convolution. the shape of a,b has to be even.
 
 	Parameters
@@ -94,6 +94,15 @@ def llconvolve(a,b):
 	conv = sc.signal.fftconvolve(a_pad,b_pad,mode="valid",axes=-1)[:d]
 	return conv
 
+def find_2factors(n):
+    rows = int(np.sqrt(n))+1
+    cols = n//rows
+    while rows*cols!=n:
+        rows-=1
+        cols = n//rows
+        if rows==0:
+            raise Exception("failed to find good plot_structure, which should never happen")
+    return (rows,cols)
 
 
 
@@ -108,7 +117,8 @@ class EELSNMF:
 														ll_convolve = False,
 														max_iters=100,
 														tol=1e-5,
-														xsection_type="Kohl"):
+														xsection_type="Kohl",
+														background_exps=None):
 
 		"""
 		Parameters
@@ -148,6 +158,10 @@ class EELSNMF:
 
 		xsection_type: str
 			Wether to use "Kohl" or "Zezhong" cross section from pyEELSMODEL. "Kohl" uses the fast option.
+		
+		background_exps: tuple
+			exponents for the power-law backgrounds
+
 
 
 
@@ -156,6 +170,8 @@ class EELSNMF:
 		self.tol=tol
 		self.max_iters=max_iters
 		self.ll_convolve = ll_convolve
+		self.background_exps = background_exps
+
 
 		if isinstance(core_loss,str):
 			cl,ll = load(core_loss)
@@ -181,9 +197,10 @@ class EELSNMF:
 
 		self.edges = edges
 
-		if n_background is None:
+		if not self.background_exps is None:
+			self.n_background = len(self.background_exps)
+		elif n_background is None:
 			self.n_background = len(edges)
-
 		else:
 			self.n_background = n_background
 
@@ -205,7 +222,14 @@ class EELSNMF:
 
 		self.fine_structure_ranges = fine_structure_ranges
 
+		
+
+		if self.cl.data.shape[-1]%2==1 and self.ll_convolve!=False:
+			self.cl=self.cl.isig[:-1] #make even for convolution.
+
 		self.energy_size = self.cl.data.shape[-1]
+		self.energy_axis = self.cl.axes_manager[-1].axis
+		assert self.cl.data.min()>=0
 
 
 		self.build_G()
@@ -220,13 +244,6 @@ class EELSNMF:
 		else:
 			hl = em.MultiSpectrum.from_numpy(self.cl.data,self.cl.axes_manager[-1].axis)
 
-			if self.ll:
-				
-				if len(self.ll.data.shape)==2:
-					p,e=self.ll.data.shape
-					ll = em.MultiSpectrum.from_numpy(self.ll.data.reshape((1,p,e)),self.ll.axes_manager[-1].axis)
-				else:
-					ll = em.MultiSpectrum.from_numpy(self.ll.data,self.ll.axes_manager[-1].axis)
 		##############################
 		############################## Create pyEELSMODEL xsections
 
@@ -243,22 +260,21 @@ class EELSNMF:
 				print("cross section type \"{}\" does not exist".format(self.xsection_type))
 			xs.append(x)
 		##############################
-		############################## Create pyEELSMODEL low loss and background
-		if self.ll:
-			ll_comp = MscatterFFT(ll.get_spectrumshape(),
-				ll,True,"edge","constant")
-
-		bg = LinearBG(hl.get_spectrumshape(),
-			rlist=np.linspace(1,self.n_background,self.n_background))
+		############################## Create pyEELSMODEL background
+		if not self.background_exps is None:
+			bg = LinearBG(hl.get_spectrumshape(),
+				rlist=self.background_exps)
+		else:
+			bg = LinearBG(hl.get_spectrumshape(),
+				rlist=np.linspace(1,self.n_background,self.n_background))
+		
 
 		##############################
 		############################## Create pyEELSMODEL low loss and background
 
 
-		comp_list = [bg]+xs#+[ll_comp] #Model without fine structure
+		comp_list = [bg]+xs
 
-		if self.ll:
-			comp_list.append(ll_comp)
 
 		##############################
 		############################## Keep track of idx for each edge for quantification afterwards
@@ -274,77 +290,91 @@ class EELSNMF:
 		self.model = em.Model(hl.get_spectrumshape(),components=comp_list)
 		self.em_fitter = LinearFitter(hl,self.model)
 
+
+		self.em_fitter.calculate_A_matrix()
+		G = self.em_fitter.A_matrix.copy()
+
 		if self.ll_convolve==True:
-			#Full G matrix convolution
-			self.full_G_convolution()# creates self.GX and self.GG
-			return
-		elif self.ll_convolve==False:
-			print("Calculating G elements")
-			self.em_fitter.calculate_A_matrix()
+			self._prepare_full_convolution(self,G)
 
-			G = self.em_fitter.A_matrix.copy()
-			print("Done")
-
-		elif isinstance(self.ll_convolve,tuple):
-			self.em_fitter.calculate_A_matrix()
-			self.em_fitter.model.components[-1].llspectrum.setcurrentspectrum(self.ll_convolve)
-			G = self.em_fitter.convolute_A_matrix()
 
 		else:
-			print("BAD ll_convolve ARGUMENT")
-			return
+			if isinstance(self.ll_convolve,tuple):
+				#spectrum image or spectrum line handling
+				assert len(self.ll_convolve)<=2
+				if len(self.ll_convolve)==2: #SI
+					i,j = self.ll_convolve
+					self.llspectrum = self.ll.data[i,j]
+				elif len(self.ll_convolve)==1: #Sline
+					i = self.ll_convolve[0]
+					self.llspectrum=ll.data[i]
+				
+				self.llspectrum[self.llspectrum<0]=0
+
+				# convolution expects same spectral shape
+				if self.llspectrum.shape[-1]>G.shape[0]:
+					self.llspectrum=self.llspectrum[:G.shape[0]]
+				elif self.llspectrum.shape[-1]<G.shape[0]:
+					missing = G.shape[0]-self.llspectrum.shape[-1]
+					self.llspectrum = np.pad(self.llspectrum,(0,missing),mode="constant",constant_values=(0,0))
+				else:
+					pass #already equal shape
+
+
+				for i in range(self.n_background,G.shape[1]):
+					G[:,i] = convolve(G[:,i],self.llspectrum)
+				
 
 
 
-		ax = self.cl.axes_manager[-1]
-		freeGs=[]
-		print("Creating ELNES")
-		ne=-1
+			ax = self.cl.axes_manager[-1]
+			freeGs=[]
+			print("Creating ELNES")
+			ne=-1
 
 
 
-		for k,v in self.fine_structure_ranges.items():
-			ne+=1
+			for k,v in self.fine_structure_ranges.items():
+				ne+=1
 
-			ii,ff = ax.value2index(v)
-			l = ff-ii+1
+				ii,ff = ax.value2index(v)
+				l = ff-ii+1
+					
+				if isinstance(self.ll_convolve,tuple):
+					G[:ff,self.n_background+ne:]=0#ne is to only set to zero the corresponding edge #[ii:ff,self.n_background+ne:]=0
 
-			G[ii:ff,self.n_background+ne:]=0#ne is to only set to zero the corresponding edge
+					lldata = self.llspectrum
+					o = lldata.argmax()#ZLP position
 
-			if not self.ll_convolve:
-				freeG = np.zeros((self.energy_size,l))
-				for r,i in enumerate(range(ii,ff+1)):
-					freeG[i,r]=1
+					freeG = np.zeros((self.energy_size,l))
+					for r,i in enumerate(range(ii,ff+1)):
 
-			elif isinstance(self.ll_convolve,tuple):
-				lldata = self.em_fitter.model.components[-1].llspectrum.data
-				o = lldata.argmax()#ZLP position
+						#put the lldata into freeG so that o coincides with i
+						if i>o:
+							freeG[i-o:,r]=lldata[:-(i-o)]
+						elif i<o:
+							freeG[:-(o-i),r]=lldata[o-i:]
 
-				freeG = np.zeros((self.energy_size,l))
-				for r,i in enumerate(range(ii,ff+1)):
-
-					#put the lldata into freeG so that o coincides with i
-					if i>o:
-						freeG[i-o:,r]=lldata[:-(i-o)]
-					elif i<o:
-						freeG[:-(o-i),r]=lldata[o-i:]
-
-					else:#i==o
-						freeG[:,r]=lldata
+						else:#i==o
+							freeG[:,r]=lldata
 
 
-			elif self.ll_convolve:
-				#full convolution
-				print("NOT implemented")
-				return
+				elif self.ll_convolve==False:
+					freeG = np.zeros((self.energy_size,l))
+					for r,i in enumerate(range(ii,ff+1)):
+						freeG[i,r]=1
 
-			else:
-				print("BAD ll_convolve")
-				return
+				else:
+					print("BAD ll_convolve")
+					return
 
 
 
-			freeGs.append(freeG)
+				freeGs.append(freeG)
+
+			self.G = np.concatenate([G]+freeGs,axis=1)
+			self.G[self.G<0]=0
+
 		self._Gstructure = [G.shape[1]]+[i.shape[1] for i in freeGs]
 
 
@@ -358,14 +388,15 @@ class EELSNMF:
 			self._W_edge_slices[k]=np.s_[cs[i]:cs[i+1]]
 	
 
-		self.G = np.concatenate([G]+freeGs,axis=1)
-		self.G[self.G<0]=0
-
+		
 
 
 	def decomposition(self,n_comps,W_init=None):
 		self.n_comps=n_comps
 		self.error_log=[]
+		if self.ll_convolve==True:
+			return self._fullconv_decomposition(self,W_init=W_init)
+
 		self.X = self.cl.data.reshape((-1,self.energy_size)).T
 		#self.cl.decomposition()
 		#GW = self.cl.get_decomposition_factors().data.T[:,:n_comps]
@@ -474,6 +505,26 @@ class EELSNMF:
 		for i in range(self.n_comps):
 			plt.plot(self.energy_axis,(self.G@self.W).T[i])
 
+	def calculate_loadings(self):
+		self.loadings = self.H.reshape([-1]+list(self.cl.data.shape[:-1]))
+
+	def plot_loadings(self):
+		self.calculate_loadings()
+		if not hasattr(self,"plot_structure"):
+			self.plot_structure = find_2factors(self.n_comps)
+		plt.figure("Loadings")
+		plt.clf()
+		r,c= self.plot_structure
+		for i in range(self.n_comps):
+			ax = plt.subplot(r,c,i+1)
+			plt.imshow(self.loadings[i])
+			ax.set_xticks([])
+			ax.set_yticks([])
+			ax.set_title("Loading {}".format(i))
+		plt.tight_layout()
+
+
+
 	def get_edge_from_component(self,component_id,edge):
 
 		out = self.G[self._edge_slices[edge]]@self.W[self._W_edge_slices[edge],component_id]
@@ -515,6 +566,14 @@ class EELSNMF:
 			columns=["component_{}".format(i) for i in range(self.W.shape[1])],
 			index = [i.split("_")[0] for i in self.xsection_idx.keys()])
 		display(self.quantification)
+
+	
+
+	def _prepare_full_convolution(self,G):
+		pass
+
+	def _fullconv_decomposition(self,W_init=None):
+		pass
 
 
 
