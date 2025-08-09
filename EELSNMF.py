@@ -18,6 +18,10 @@ import hyperspy.api as hs
 from sklearn.decomposition._nmf import _initialize_nmf as initialize_nmf
 import pandas as pd
 import scipy as sc
+import Gprep
+from Gprep import convolve
+import importlib
+importlib.reload(Gprep)#remove after debugging?
 
 
 def load_decomposition(fname):
@@ -28,6 +32,7 @@ def load_decomposition(fname):
 	out.cl = hs.signals.Signal1D(out.cl[0])
 	out.cl.axes_manager[-1].offset = x[0]
 	out.cl.axes_manager[-1].scale = x[1]-x[0]
+	out.ax = out.cl.axes_manager[-1]
 
 	d,x = out.ll
 	out.ll = hs.signals.Signal1D(out.ll[0])
@@ -42,7 +47,7 @@ def load(fname):
 	if isinstance(s,hs.signals.Signal1D): # its either list or SI
 		return s,None
 
-	s = [i for i in l if isinstance(i,hs.signals.Signal1D)]
+	s = [i for i in s if isinstance(i,hs.signals.Signal1D)]
 
 	if len(s)==2:
 		ll = [i for i in s if any(i.axes_manager[-1].axis<0)][0]
@@ -58,41 +63,7 @@ def load(fname):
 		raise Exception("File should contain either one (coreloss) or two (coreloss + lowloss) SIs. Insted there are {}".format(len(s)))
 
 
-def convolve(a,b):
-	"""1-d convolution. the shape of a,b has to be even.
 
-	Parameters
-	----------
-
-	a: np.array
-		Typically it will be a column of the unconvolved G matrix.
-
-	b: np.array
-		Typically it will be a single low loss spectrum
-
-
-	Returns
-	-------
-
-	C: np.array
-		Typically the low-loss convolved G row.
-
-		"""
-
-	assert a.shape==b.shape
-	assert a.shape[0]%2==0
-	assert b.shape[0]%2==0
-	assert len(a.shape)==1
-	assert len(b.shape)==1
-
-	d = a.shape[0]
-
-	o = b.argmax()
-	a_pad = np.pad(a,(d,d),mode="edge")
-	b_pad = np.pad(b,(0,o),mode="edge")
-	b_pad/=b_pad.sum()
-	conv = sc.signal.fftconvolve(a_pad,b_pad,mode="valid",axes=-1)[:d]
-	return conv
 
 def find_2factors(n):
     rows = int(np.sqrt(n))+1
@@ -113,12 +84,12 @@ class EELSNMF:
 														E0 = None,
 														alpha = None,
 														beta = None,
-														fine_structure_ranges = None,
+														fine_structure_ranges = {},
 														ll_convolve = False,
 														max_iters=100,
-														tol=1e-5,
 														xsection_type="Kohl",
-														background_exps=None):
+														background_exps=None,
+														tol = 1e-6):
 
 		"""
 		Parameters
@@ -153,14 +124,14 @@ class EELSNMF:
 		max_iters: int
 			Maximum iterations of the NMF algorithm
 
-		tol: float
-			convergence tolerance on the error.
-
 		xsection_type: str
 			Wether to use "Kohl" or "Zezhong" cross section from pyEELSMODEL. "Kohl" uses the fast option.
 		
 		background_exps: tuple
 			exponents for the power-law backgrounds
+
+		tol: float
+			Sets conditions to stop decomposition process. If the relative change in error is below tol the process is stopped.
 
 
 
@@ -171,6 +142,9 @@ class EELSNMF:
 		self.max_iters=max_iters
 		self.ll_convolve = ll_convolve
 		self.background_exps = background_exps
+
+		self.dtype =np.float64 #used for debugging memory issues and evaluate precision needed
+
 
 
 		if isinstance(core_loss,str):
@@ -216,7 +190,7 @@ class EELSNMF:
 
 
 		if beta is None:
-			self.beta = self.clmetadata.Acquisition_instrument.TEM.Detector.EELS.collection_angle*1e-3 #in rad
+			self.beta = self.cl.metadata.Acquisition_instrument.TEM.Detector.EELS.collection_angle*1e-3 #in rad
 		else:
 			self.beta = beta
 
@@ -231,173 +205,24 @@ class EELSNMF:
 		self.energy_axis = self.cl.axes_manager[-1].axis
 		assert self.cl.data.min()>=0
 
+		if hasattr(self,"ll"):
+			self.ll_data_flat = self.ll.data.reshape([-1]+[self.ll.data.shape[-1]]).T
+
+		if isinstance(self.ll_convolve,tuple):
+			self._ll_id=np.prod(self.ll_convolve)
+
 
 		self.build_G()
 
-
-	def build_G(self):
-
-		############################## Create pyEELSMODEL SIs
-		if len(self.cl.data.shape)==2:
-			p,e=self.cl.data.shape
-			hl = em.MultiSpectrum.from_numpy(self.cl.data.reshape((1,p,e)),self.cl.axes_manager[-1].axis)
-		else:
-			hl = em.MultiSpectrum.from_numpy(self.cl.data,self.cl.axes_manager[-1].axis)
-
-		##############################
-		############################## Create pyEELSMODEL xsections
-
-		xs=[]
-		for edge in self.edges:
-			element,edge_type = edge.split("_")
-			if self.xsection_type == "Zezhong":
-				x = ZezhongCoreLossEdgeCombined(hl.get_spectrumshape(),
-					1,self.E0,self.alpha,self.beta,element,edge_type)
-			elif self.xsection_type == "Kohl":
-				x = KohlLossEdgeCombined(hl.get_spectrumshape(),
-					1,self.E0,self.alpha,self.beta,element,edge_type,fast=True)
-			else:
-				print("cross section type \"{}\" does not exist".format(self.xsection_type))
-			xs.append(x)
-		##############################
-		############################## Create pyEELSMODEL background
-		if not self.background_exps is None:
-			bg = LinearBG(hl.get_spectrumshape(),
-				rlist=self.background_exps)
-		else:
-			bg = LinearBG(hl.get_spectrumshape(),
-				rlist=np.linspace(1,self.n_background,self.n_background))
-		
-
-		##############################
-		############################## Create pyEELSMODEL low loss and background
+	build_G = Gprep.build_G
+	_prepare_full_convolution_G = Gprep._prepare_full_convolution_G
+	_prepare_single_spectrum_convolution_G = Gprep._prepare_single_spectrum_convolution_G
+	_prepare_dirac_G = Gprep._prepare_dirac_G
 
 
-		comp_list = [bg]+xs
-
-
-		##############################
-		############################## Keep track of idx for each edge for quantification afterwards
-		self.xsection_idx={}
-		for i,edge in enumerate(self.edges):
-			element,edge_type=edge.split("_")
-			self.xsection_idx[edge]=i+self.n_background
-		##############################
-		############################## 
-
-
-
-		self.model = em.Model(hl.get_spectrumshape(),components=comp_list)
-		self.em_fitter = LinearFitter(hl,self.model)
-
-
-		self.em_fitter.calculate_A_matrix()
-		G = self.em_fitter.A_matrix.copy()
-
-		if self.ll_convolve==True:
-			self._prepare_full_convolution(self,G)
-
-
-		else:
-			if isinstance(self.ll_convolve,tuple):
-				#spectrum image or spectrum line handling
-				assert len(self.ll_convolve)<=2
-				if len(self.ll_convolve)==2: #SI
-					i,j = self.ll_convolve
-					self.llspectrum = self.ll.data[i,j]
-				elif len(self.ll_convolve)==1: #Sline
-					i = self.ll_convolve[0]
-					self.llspectrum=ll.data[i]
-				
-				self.llspectrum[self.llspectrum<0]=0
-
-				# convolution expects same spectral shape
-				if self.llspectrum.shape[-1]>G.shape[0]:
-					self.llspectrum=self.llspectrum[:G.shape[0]]
-				elif self.llspectrum.shape[-1]<G.shape[0]:
-					missing = G.shape[0]-self.llspectrum.shape[-1]
-					self.llspectrum = np.pad(self.llspectrum,(0,missing),mode="constant",constant_values=(0,0))
-				else:
-					pass #already equal shape
-
-
-				for i in range(self.n_background,G.shape[1]):
-					G[:,i] = convolve(G[:,i],self.llspectrum)
-				
-
-
-
-			ax = self.cl.axes_manager[-1]
-			freeGs=[]
-			print("Creating ELNES")
-			ne=-1
-
-
-
-			for k,v in self.fine_structure_ranges.items():
-				ne+=1
-
-				ii,ff = ax.value2index(v)
-				l = ff-ii+1
-					
-				if isinstance(self.ll_convolve,tuple):
-					G[:ff,self.n_background+ne:]=0#ne is to only set to zero the corresponding edge #[ii:ff,self.n_background+ne:]=0
-
-					lldata = self.llspectrum
-					o = lldata.argmax()#ZLP position
-
-					freeG = np.zeros((self.energy_size,l))
-					for r,i in enumerate(range(ii,ff+1)):
-
-						#put the lldata into freeG so that o coincides with i
-						if i>o:
-							freeG[i-o:,r]=lldata[:-(i-o)]
-						elif i<o:
-							freeG[:-(o-i),r]=lldata[o-i:]
-
-						else:#i==o
-							freeG[:,r]=lldata
-
-
-				elif self.ll_convolve==False:
-					freeG = np.zeros((self.energy_size,l))
-					for r,i in enumerate(range(ii,ff+1)):
-						freeG[i,r]=1
-
-				else:
-					print("BAD ll_convolve")
-					return
-
-
-
-				freeGs.append(freeG)
-
-			self.G = np.concatenate([G]+freeGs,axis=1)
-			self.G[self.G<0]=0
-
-		self._Gstructure = [G.shape[1]]+[i.shape[1] for i in freeGs]
-
-
-		
-		self._edge_slices={}
-		self._W_edge_slices={}
-		cs = np.cumsum(self._Gstructure)
-
-		for i,k in enumerate(self.fine_structure_ranges.keys()):
-			self._edge_slices[k]=np.s_[:,cs[i]:cs[i+1]] # this gives you the slice to get a given edge: G[slice]@W[slice,comp] for and edge of a component
-			self._W_edge_slices[k]=np.s_[cs[i]:cs[i+1]]
-	
-
-		
-
-
-	def decomposition(self,n_comps,W_init=None):
-		self.n_comps=n_comps
-		self.error_log=[]
-		if self.ll_convolve==True:
-			return self._fullconv_decomposition(self,W_init=W_init)
-
-		self.X = self.cl.data.reshape((-1,self.energy_size)).T
+	def _init_XWH(self,W_init=None):
+		if not hasattr(self,"X"):
+			self.X = self.cl.data.reshape((-1,self.energy_size)).T.astype(self.dtype)
 		#self.cl.decomposition()
 		#GW = self.cl.get_decomposition_factors().data.T[:,:n_comps]
 		#self.H = self.cl.get_decomposition_loadings().data[:n_comps].reshape((n_comps,-1))
@@ -405,13 +230,25 @@ class EELSNMF:
 			self.W = W_init
 			self.H = np.abs(np.linalg.lstsq(self.G@self.W, self.X,rcond=None)[0])
 		else:	
-			GW,self.H = initialize_nmf(self.X,n_comps)
+			GW,self.H = initialize_nmf(self.X,self.n_comps)
 			self.W = np.abs(np.linalg.lstsq(self.G, GW,rcond=None)[0])
 
 		self.H[np.isnan(self.H)]=1e-10
 		self.H[np.isinf(self.H)]=1e-10
 		self.W[np.isnan(self.W)]=1e-10
 		self.W[np.isinf(self.W)]=1e-10
+
+		self.H=self.H.astype(self.dtype)
+		self.W=self.W.astype(self.dtype)
+
+
+	def decomposition(self,n_comps,W_init=None):
+		self.n_comps=n_comps
+		self.error_log=[]
+		if self.ll_convolve==True:
+			return self._fullconv_decomposition(W_init=W_init)
+
+		self._init_XWH(W_init)
 
 		#fixed products
 		if not hasattr(self,"GtX") and not hasattr(self,"GtG"): # in case of full deconvolution they are already created
@@ -443,13 +280,12 @@ class EELSNMF:
 		    error = abs(self.X-self.G@self.W@self.H).sum()
 		    self.error_log.append(error)
 
-		    if error_0-error<=self.tol and i>2:
-		    	pass
-		    	#print("Converged after {} iterations".format(i))
-		    	#return
+		    if abs((error_0-error)/error_0)<=self.tol and i>2:
+		    	print("Converged after {} iterations".format(i))
+		    	return
 
 		    if i%50==0:
-		    	print("Error = {} after {} iterations".format(error,i))
+		    	print("Error = {} after {} iterations. Relative change = {}".format(error,i,abs((error_0-error)/error_0)))
 		    error_0 = error
 
 		    #shifts to prevent 0 locking
@@ -503,7 +339,8 @@ class EELSNMF:
 		plt.figure("Factors")
 		plt.clf()
 		for i in range(self.n_comps):
-			plt.plot(self.energy_axis,(self.G@self.W).T[i])
+			plt.plot(self.energy_axis,(self.G@self.W).T[i],label="Component {}".format(i))
+		plt.legend()
 
 	def calculate_loadings(self):
 		self.loadings = self.H.reshape([-1]+list(self.cl.data.shape[:-1]))
@@ -538,15 +375,26 @@ class EELSNMF:
 
 	def save(self,fname):
 		temp = self.cl.deepcopy()
-		temp_ll = self.ll.deepcopy()
 		self.cl = (self.cl.data,self.cl.axes_manager[-1].axis)
-		self.ll = (self.ll.data,self.ll.axes_manager[-1].axis)
+
+		if hasattr(self,"ax"):
+			del self.ax
+		
+
+		if isinstance(self.ll,hs.signals.Signal1D):
+			temp_ll = self.ll.deepcopy()
+			self.ll = (self.ll.data,self.ll.axes_manager[-1].axis)
+		else:
+			temp_ll=None
+
+		
 
 		with open(fname,"wb") as f:
 			pkl.dump(self,f)
 
 		self.cl= temp
 		self.ll = temp_ll
+		self.ax = self.cl.axes_manager[-1]
 		return
 
 	def quantify_components(self):
@@ -565,15 +413,58 @@ class EELSNMF:
 		self.quantification = pd.DataFrame(simplified_W,
 			columns=["component_{}".format(i) for i in range(self.W.shape[1])],
 			index = [i.split("_")[0] for i in self.xsection_idx.keys()])
-		display(self.quantification)
+		try:
+			display(self.quantification)
+		except:
+			pass
 
-	
 
-	def _prepare_full_convolution(self,G):
-		pass
+
 
 	def _fullconv_decomposition(self,W_init=None):
-		pass
+		if not hasattr(self,"GtG"):
+			raise Exception("was _prepare_full_deco not run?")
+
+		self._init_XWH(W_init)
+
+		#error_0 = abs(self.X-self.G@self.W@self.H).sum()  We have no explicit G stored to save memory
+
+		for i in range(1,self.max_iters+1):
+
+
+		    #Update W
+		    #WHHt = self.W@self.H@self.H.T
+
+		    num = self.GtX@self.H.T 
+		    denum = np.einsum("mlp,lk,kp,pq->mq",self.GtG,self.W,self.H,self.H.T)#self.GtG@WHHt
+
+		    self.W*=num/denum
+
+		    #update H
+		    #WH = self.W@self.H
+
+		    num = self.W.T@self.GtX
+		    denum = np.einsum("kl,lmp,mq,qp->kp",self.W.T,self.GtG,self.W,self.H)
+
+		    self.H*=num/denum
+
+		    error = abs(self.X-self.G@self.W@self.H).sum()
+		    self.error_log.append(error)
+
+		    if error_0-error<=self.tol and i>2:
+		    	pass
+		    	#print("Converged after {} iterations".format(i))
+		    	#return
+
+		    if i%50==0:
+		    	print("Error = {} after {} iterations".format(error,i))
+		    error_0 = error
+
+		    #shifts to prevent 0 locking
+		    self.W[self.W==0]=1e-10
+		    self.H[self.H==0]=1e-10
+
+
 
 
 
