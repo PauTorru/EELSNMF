@@ -144,7 +144,7 @@ class EELSNMF:
 		self.background_exps = background_exps
 
 		self.dtype =np.float64 #used for debugging memory issues and evaluate precision needed
-
+		self.print_error_every=50
 
 
 		if isinstance(core_loss,str):
@@ -221,6 +221,8 @@ class EELSNMF:
 
 
 	def _init_XWH(self,W_init=None):
+		if not hasattr(self,"G") or self.G is None:
+			self.G = self._ucG.copy() #initialize with uncovolved G
 		if not hasattr(self,"X"):
 			self.X = self.cl.data.reshape((-1,self.energy_size)).T.astype(self.dtype)
 		#self.cl.decomposition()
@@ -284,7 +286,7 @@ class EELSNMF:
 		    	print("Converged after {} iterations".format(i))
 		    	return
 
-		    if i%50==0:
+		    if i%self.print_error_every==0:
 		    	print("Error = {} after {} iterations. Relative change = {}".format(error,i,abs((error_0-error)/error_0)))
 		    error_0 = error
 
@@ -427,7 +429,7 @@ class EELSNMF:
 
 		self._init_XWH(W_init)
 
-		#error_0 = abs(self.X-self.G@self.W@self.H).sum()  We have no explicit G stored to save memory
+		#error_0 = abs(self.X-self._ucG@self.W@self.H).sum()  We have no explicit G stored to save memory
 
 		for i in range(1,self.max_iters+1):
 
@@ -448,17 +450,17 @@ class EELSNMF:
 
 		    self.H*=num/denum
 
-		    error = abs(self.X-self.G@self.W@self.H).sum()
-		    self.error_log.append(error)
+		    #error = abs(self.X-self.G@self.W@self.H).sum()
+		    #self.error_log.append(error)
 
-		    if error_0-error<=self.tol and i>2:
-		    	pass
+		    #if error_0-error<=self.tol and i>2:
+		    	#pass
 		    	#print("Converged after {} iterations".format(i))
 		    	#return
 
 		    if i%50==0:
-		    	print("Error = {} after {} iterations".format(error,i))
-		    error_0 = error
+		    	print("Error calculation not implemented. iters = {}".format(i))#.format(error,i))
+		    #error_0 = error
 
 		    #shifts to prevent 0 locking
 		    self.W[self.W==0]=1e-10

@@ -111,8 +111,9 @@ def build_G(self):
 	G = self.em_fitter.A_matrix.copy()
 
 	if self.ll_convolve==True:
-		self.G=self._prepare_full_convolution_G(G)
+		self._prepare_full_convolution_G(G)
 		self._ucG,freeGs_shape  =self._prepare_dirac_G(G)#unconvolved G
+		
 		return
 
 	elif isinstance(self.ll_convolve,tuple):
@@ -238,7 +239,7 @@ def _prepare_full_convolution_G(self,G0):
 				print("Preparing full convolution {}/{}".format(p,self.ll_data_flat.shape[1]))
 			self._ll_id = p
 			G=self._prepare_single_spectrum_convolution_G(G0)
-			print(G.sum())
+			
 
 			if not hasattr(self,"GtX"): # init here to no have to count final G size
 				self.GtX = np.zeros([G.shape[1],self.X.shape[1]],dtype=self.dtype)
