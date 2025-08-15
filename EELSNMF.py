@@ -22,6 +22,10 @@ import Gprep
 from Gprep import convolve
 import importlib
 importlib.reload(Gprep)#remove after debugging?
+try:
+	import cupy as cp
+except:
+	print("cupy not available")
 
 
 def load_decomposition(fname):
@@ -40,7 +44,8 @@ def load_decomposition(fname):
 	out.ll.axes_manager[-1].scale = x[1]-x[0]
 	return out
 
-
+def norm(x):
+	return (x-x.min())/(x.max()-x.min())
 
 def load(fname):
 	s = hs.load(fname)
@@ -89,7 +94,9 @@ class EELSNMF:
 														max_iters=100,
 														xsection_type="Kohl",
 														background_exps=None,
-														tol = 1e-6):
+														tol = 1e-6,
+														use_cupy=False,
+														init_nmf=None,random_state_nmf=None):
 
 		"""
 		Parameters
@@ -133,7 +140,8 @@ class EELSNMF:
 		tol: float
 			Sets conditions to stop decomposition process. If the relative change in error is below tol the process is stopped.
 
-
+		use_cupy: bool
+			Use cupy for GPU acceleration of the decomposition algorithm.
 
 
 		"""
@@ -145,7 +153,9 @@ class EELSNMF:
 
 		self.dtype =np.float64 #used for debugging memory issues and evaluate precision needed
 		self.print_error_every=50
-
+		self.use_cupy=use_cupy
+		self.init_nmf=init_nmf
+		self.random_state_nmf=random_state_nmf
 
 		if isinstance(core_loss,str):
 			cl,ll = load(core_loss)
@@ -232,7 +242,7 @@ class EELSNMF:
 			self.W = W_init
 			self.H = np.abs(np.linalg.lstsq(self.G@self.W, self.X,rcond=None)[0])
 		else:	
-			GW,self.H = initialize_nmf(self.X,self.n_comps)
+			GW,self.H = initialize_nmf(self.X,self.n_comps,init=self.init_nmf,random_state=self.random_state_nmf)
 			self.W = np.abs(np.linalg.lstsq(self.G, GW,rcond=None)[0])
 
 		self.H[np.isnan(self.H)]=1e-10
@@ -257,6 +267,8 @@ class EELSNMF:
 			self.GtX = self.G.T@self.X
 			self.GtG = self.G.T@self.G
 
+		if self.use_cupy:
+			return self._cupy_decomposition()
 
 		error_0 = abs(self.X-self.G@self.W@self.H).sum()
 
@@ -336,6 +348,62 @@ class EELSNMF:
 		#update W
 		"""
 		
+	def _cupy_decomposition(self):
+		
+		self.GtX = cp.array(self.GtX)
+		self.GtG = cp.array(self.GtG)
+		self.X = cp.array(self.X) 
+		self.W = cp.array(self.W)
+		self.G = cp.array(self.G)
+		self.H = cp.array(self.H)
+
+
+		error_0 = float(cp.sum(cp.absolute(cp.subtract(self.X,
+							cp.matmul(cp.matmul(self.G,self.W),self.H))))) #error_0 = abs(self.X-self.G@self.W@self.H).sum()
+
+		for i in range(1,self.max_iters+1):
+
+
+		    #Update W
+		    WHHt = cp.matmul(cp.matmul(self.W,self.H),cp.transpose(self.H))#self.W@self.H@self.H.T
+
+		    num = cp.matmul(self.GtX,cp.transpose(self.H))#self.GtX@self.H.T 
+		    denum = cp.matmul(self.GtG,WHHt)#self. GtG@WHHt
+
+		    self.W = cp.multiply(self.W,cp.divide(num,denum))#*=num/denum
+
+		    #update H
+		    WH = cp.matmul(self.W,self.H)#self.W@self.H
+
+		    num = cp.matmul(cp.transpose(self.W),self.GtX)#self.W.T@self.GtX
+		    denum = cp.matmul(cp.matmul(cp.transpose(self.W),self.GtG),WH)#self.W.T@self.GtG@WH
+
+		    self.H = cp.multiply(self.H,cp.divide(num,denum))#*=num/denum
+
+		    error = float(cp.sum(cp.absolute(cp.subtract(self.X,
+							cp.matmul(cp.matmul(self.G,self.W),self.H))))) #error = abs(self.X-self.G@self.W@self.H).sum()
+
+		    self.error_log.append(error)
+
+		    if abs((error_0-error)/error_0)<=self.tol and i>2:
+		    	print("Converged after {} iterations".format(i))
+		    	break
+
+		    if i%self.print_error_every==0:
+		    	print("Error = {} after {} iterations. Relative change = {}".format(error,i,abs((error_0-error)/error_0)))
+		    error_0 = error
+
+		    #shifts to prevent 0 locking
+		    self.W[self.W==0]=1e-10
+		    self.H[self.H==0]=1e-10
+
+		self.X = self.X.get()
+		self.W = self.W.get()
+		self.G = self.G.get()
+		self.H = self.H.get()
+		self.GtG  = self.GtG.get()
+		self.GtX  = self.GtX.get()
+
 
 	def plot_factors(self):
 		plt.figure("Factors")
@@ -428,6 +496,8 @@ class EELSNMF:
 			raise Exception("was _prepare_full_deco not run?")
 
 		self._init_XWH(W_init)
+		if self.use_cupy:
+			return self._fullconv_cupy_decomposition()
 
 		#error_0 = abs(self.X-self._ucG@self.W@self.H).sum()  We have no explicit G stored to save memory
 
@@ -465,6 +535,117 @@ class EELSNMF:
 		    #shifts to prevent 0 locking
 		    self.W[self.W==0]=1e-10
 		    self.H[self.H==0]=1e-10
+
+	def _fullconv_cupy_decomposition(self):
+		self.GtX = cp.array(self.GtX)
+		self.GtG = cp.array(self.GtG)
+		self.X = cp.array(self.X) 
+		self.W = cp.array(self.W)
+		self.G = cp.array(self.G)
+		self.H = cp.array(self.H)
+
+		for i in range(1,self.max_iters+1):
+
+
+			    #Update W
+			    #WHHt = self.W@self.H@self.H.T
+
+			    num = cp.matmul(self.GtX,cp.transpose(self.H))#self.GtX@self.H.T 
+			    denum = cp.einsum("mlp,lk,kp,pq->mq",self.GtG,self.W,self.H,cp.transpose(self.H))#self.GtG@WHHt
+
+			    self.W = cp.multiply(self.W,cp.divide(num,denum))#*=num/denum
+
+			    #update H
+			    #WH = self.W@self.H
+
+			    num = cp.matmul(cp.transpose(self.W),self.GtX)#self.W.T@self.GtX
+			    denum = cp.einsum("kl,lmp,mq,qp->kp",self.W.T,self.GtG,self.W,self.H)
+
+			    self.H = cp.multiply(self.H,cp.divide(num,denum))#*=num/denum
+
+			    #error = abs(self.X-self.G@self.W@self.H).sum()
+			    #self.error_log.append(error)
+
+			    #if error_0-error<=self.tol and i>2:
+			    	#pass
+			    	#print("Converged after {} iterations".format(i))
+			    	#return
+
+			    if i%50==0:
+			    	print("Error calculation not implemented. iters = {}".format(i))#.format(error,i))
+			    #error_0 = error
+
+			    #shifts to prevent 0 locking
+			    self.W[self.W==0]=1e-10
+			    self.H[self.H==0]=1e-10
+
+		self.X = self.X.get()
+		self.W = self.W.get()
+		self.G = self.G.get()
+		self.H = self.H.get()
+		#self.GtG  = self.GtG.get()
+		#self.GtX  = self.GtX.get()
+
+	def plot_edges(self,normalize=False):
+		plt.figure("Edges")
+		plt.clf()
+		r,c=find_2factors(len(self.fine_structure_ranges.keys()))
+		for ik,edge in enumerate(self.fine_structure_ranges.keys()):
+			ax = plt.subplot(r,c,ik+1)
+			ax.set_title(edge)
+			for i in range(self.n_comps):
+				ii,ff=self.ax.value2index(self.fine_structure_ranges[edge])
+				if normalize:
+					plt.plot(self.energy_axis[ii:ff],norm(self.get_edge_from_component(i,edge).data[ii:ff]))
+				else:
+					plt.plot(self.energy_axis[ii:ff],self.get_edge_from_component(i,edge).data[ii:ff])
+
+	def get_chemical_maps(self):
+		self.chemical_maps={}
+		for ik,edge in enumerate(self.fine_structure_ranges.keys()):
+
+			self.chemical_maps[edge]=(self.W[self.xsection_idx[edge],:]@self.H).reshape(self.cl.data.shape[:-1])
+		return self.chemical_maps
+
+	def get_quantified_chemical_maps(self):
+		chemmaps = self.get_chemical_maps()
+		qmaps=[]
+		for ik,edge in enumerate(self.fine_structure_ranges.keys()):
+			qmaps.append(chemmaps[edge])
+		qmaps=np.array(qmaps)
+		qmaps/=qmaps.sum(0)[np.newaxis,...]
+		qmaps*=100
+
+		self.qmaps={}
+		for ik,edge in enumerate(self.fine_structure_ranges.keys()):
+			self.qmaps[edge]=qmaps[ik]
+		return self.qmaps
+
+	def plot_quantified_chemical_maps(self):
+		
+		qmaps=self.get_quantified_chemical_maps()
+		plt.figure("Quantified Chemical Maps")
+		plt.clf()
+		r,c=find_2factors(len(self.fine_structure_ranges.keys()))
+		for ik,edge in enumerate(self.fine_structure_ranges.keys()):
+			ax = plt.subplot(r,c,ik+1)
+			ax.set_title(edge)
+			plt.imshow(qmaps[edge])
+			plt.colorbar()
+		
+
+	def plot_chemical_maps(self):
+		plt.figure("Chemical Maps")
+		plt.clf()
+		r,c=find_2factors(len(self.fine_structure_ranges.keys()))
+		chemmaps = self.get_chemical_maps()
+		for ik,edge in enumerate(self.fine_structure_ranges.keys()):
+			ax = plt.subplot(r,c,ik+1)
+			ax.set_title(edge)
+			plt.imshow(chemmaps[edge])
+			plt.colorbar()
+			
+
 
 
 
