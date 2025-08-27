@@ -141,7 +141,7 @@ def build_G(self):
 	#Ideally sum of free parameters is linked to the cross section parameter but I could not get 
 	for k in self.xsection_idx.keys():
 		ii,ff = self.ax.value2index(self.fine_structure_ranges[k])
-		self.G[ii:ff+1,self.xsection_idx[k]]=0
+		self.G[ii:ff+2,self.xsection_idx[k]]=0 #ff+2 avoids overlap with fine structure?
 
 
 
@@ -152,9 +152,9 @@ def _prepare_dirac_G(self,G):
 		ne+=1
 
 		ii,ff = self.ax.value2index(v)
-		l = ff-ii+1
+		l = ff-ii#+1  #this overlaps with cropped xsection. problematic?
 		freeG = np.zeros((self.energy_size,l))
-		for r,i in enumerate(range(ii,ff+1)):
+		for r,i in enumerate(range(ii,ff)):#+1)):
 			freeG[i,r]=1
 		freeGs.append(freeG)
 	out = np.concatenate([G]+freeGs,axis=1).astype(self.dtype)
@@ -189,14 +189,14 @@ def _prepare_single_spectrum_convolution_G(self,G):
 	for k,v in self.fine_structure_ranges.items():
 		ne+=1 #count fine structure elements
 		ii,ff = self.ax.value2index(v)
-		l = ff-ii+1
+		l = ff-ii#+1  #this overlaps with cropped xsection. problematic?
 		G[:ff,self.n_background+ne:]=0 #ne is to only set to zero the corresponding edge #[ii:ff,self.n_background+ne:]=0
 
 		lldata = self.llspectrum
 		o = lldata.argmax()#ZLP position
 
 		freeG = np.zeros((self.energy_size,l))
-		for r,i in enumerate(range(ii,ff+1)):
+		for r,i in enumerate(range(ii,ff)):#+1)):
 
 			#put the lldata into freeG so that o coincides with i
 			if i>o:

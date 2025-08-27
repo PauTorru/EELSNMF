@@ -20,6 +20,7 @@ import pandas as pd
 import scipy as sc
 import Gprep
 from Gprep import convolve
+import matplotlib as mpl
 import importlib
 importlib.reload(Gprep)#remove after debugging?
 try:
@@ -221,7 +222,7 @@ class EELSNMF:
 		if isinstance(self.ll_convolve,tuple):
 			self._ll_id=np.prod(self.ll_convolve)
 
-
+		self.X = self.cl.data.reshape((-1,self.energy_size)).T.astype(self.dtype)
 		self.build_G()
 
 	build_G = Gprep.build_G
@@ -644,7 +645,32 @@ class EELSNMF:
 			ax.set_title(edge)
 			plt.imshow(chemmaps[edge])
 			plt.colorbar()
-			
+
+	def plot_average_model(self):
+		plt.figure("Model")
+		plt.clf()
+		plt.plot(self.energy_axis,self.X.mean(1),label="Data")
+		plt.plot(self.energy_axis,(self.G@self.W@self.H).mean(1),label="Model")
+	
+	def plot_energy_ranges(self):
+		plt.figure("Edges energy ranges")
+		plt.clf()
+		plt.plot(self.energy_axis,norm(self.X.mean(1)))
+		ax=plt.gca()
+		colors=plt.rcParams['axes.prop_cycle'].by_key()['color']
+		c=-1
+		for k,v in self.fine_structure_ranges.items():
+			c+=1
+			ii,ff = v
+			rect = mpl.patches.Rectangle((ii, 0.), ff-ii, 1,
+                         alpha=0.5,label=k,color=colors[c])
+			ax.add_patch(rect)
+		ax.set_xlim(self.energy_axis.min(),self.energy_axis.max())
+		ax.set_ylim(0,1)
+		ax.set_yticks([])
+		plt.legend()
+
+
 
 
 
