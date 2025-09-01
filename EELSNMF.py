@@ -83,6 +83,10 @@ def find_2factors(n):
 
 
 
+
+
+
+
 class EELSNMF:
 
 	def __init__(self,core_loss, edges, low_loss= None,
@@ -255,7 +259,7 @@ class EELSNMF:
 		self.W=self.W.astype(self.dtype)
 
 
-	def decomposition(self,n_comps,W_init=None):
+	def decomposition(self,n_comps,W_init=None,W_fixed_bool=None,W_fixed_values=None):
 		self.n_comps=n_comps
 		self.error_log=[]
 		if self.ll_convolve==True:
@@ -269,7 +273,7 @@ class EELSNMF:
 			self.GtG = self.G.T@self.G
 
 		if self.use_cupy:
-			return self._cupy_decomposition()
+			return self._cupy_decomposition(W_fixed_bool=W_fixed_bool,W_fixed_values=W_fixed_values)
 
 		error_0 = abs(self.X-self.G@self.W@self.H).sum()
 
@@ -283,6 +287,8 @@ class EELSNMF:
 		    denum = self. GtG@WHHt
 
 		    self.W*=num/denum
+		    if not W_fixed_bool is None:
+		    	self.W[W_fixed_bool]=W_fixed_values
 
 		    #update H
 		    WH = self.W@self.H
@@ -349,7 +355,7 @@ class EELSNMF:
 		#update W
 		"""
 		
-	def _cupy_decomposition(self):
+	def _cupy_decomposition(self,W_fixed_bool=None,W_fixed_values=None):
 		
 		self.GtX = cp.array(self.GtX)
 		self.GtG = cp.array(self.GtG)
@@ -358,6 +364,8 @@ class EELSNMF:
 		self.G = cp.array(self.G)
 		self.H = cp.array(self.H)
 
+		if not W_fixed_bool is None:
+		    	self.W[W_fixed_bool]=W_fixed_values
 
 		error_0 = float(cp.sum(cp.absolute(cp.subtract(self.X,
 							cp.matmul(cp.matmul(self.G,self.W),self.H))))) #error_0 = abs(self.X-self.G@self.W@self.H).sum()
@@ -372,6 +380,8 @@ class EELSNMF:
 		    denum = cp.matmul(self.GtG,WHHt)#self. GtG@WHHt
 
 		    self.W = cp.multiply(self.W,cp.divide(num,denum))#*=num/denum
+		    if not W_fixed_bool is None:
+		    	self.W[W_fixed_bool]=W_fixed_values
 
 		    #update H
 		    WH = cp.matmul(self.W,self.H)#self.W@self.H
@@ -397,6 +407,8 @@ class EELSNMF:
 		    #shifts to prevent 0 locking
 		    self.W[self.W==0]=1e-10
 		    self.H[self.H==0]=1e-10
+		    if not W_fixed_bool is None:
+		    	self.W[W_fixed_bool]=W_fixed_values
 
 		self.X = self.X.get()
 		self.W = self.W.get()
@@ -651,6 +663,7 @@ class EELSNMF:
 		plt.clf()
 		plt.plot(self.energy_axis,self.X.mean(1),label="Data")
 		plt.plot(self.energy_axis,(self.G@self.W@self.H).mean(1),label="Model")
+		plt.legend()
 	
 	def plot_energy_ranges(self):
 		plt.figure("Edges energy ranges")
