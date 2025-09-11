@@ -684,6 +684,9 @@ class EELSNMF:
 		plt.legend()
 
 
+	
+
+
 
 
 
