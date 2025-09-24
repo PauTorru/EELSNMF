@@ -51,7 +51,10 @@ class Decomposition(_Default):
 		self.W_fixed_bool=W_fixed_bool
 		self.W_fixed_values=W_fixed_values
 
-		method = getattr(self,self._DECOMPOSITION_CHOICES[(self.analysis_description["model_type"],self.analysis_description["decomposition"]["use_cupy"])])
+		decomposition_method = self._DECOMPOSITION_CHOICES[(self.analysis_description["model_type"],self.analysis_description["decomposition"]["use_cupy"])]
+		self.analysis_description["decomposition"]["method"]=decomposition_method
+
+		method = getattr(self,decomposition_method)
 		method()
 
 	def apply_fix_W(self):

@@ -1,11 +1,12 @@
 
 import hyperspy.api as hs
 import pandas as pd
+import numpy as np
 
 
 
 default_q_methods = {
-	("deltas","standard"):{
+	("deltas","_default_decomposition"):{
 	"component_quantification":"component_standard_q",
 	"spatial_quantification": "spatial_standard_q"
 	},
@@ -39,13 +40,6 @@ default_q_methods = {
 }
 
 
-
-
-
-
-
-
-
 class Analysis:
 
 	def calculate_loadings(self):
@@ -56,7 +50,7 @@ class Analysis:
 
 	def get_edge_from_component(self,component_id,edge):
 
-		data = self.G[self._G_slices[edge]]@self.W[self._W_slices[edge],component_id]
+		data = self.G[:,self.model._edge_slices[edge]]@self.W[self.model._edge_slices[edge],component_id]
 
 		return hs.signals.Signal1D(data,axes=[self._eaxis_parameters])
 
@@ -64,11 +58,11 @@ class Analysis:
 	def quantify_components(self, method=None):
 
 		if method is None:
-			method = self._default_component_quantification_method(self)
+			method = self._default_component_quantification_method()
 		elif isinstance(method,str):
 			method = getattr(self,method)
 
-		array_component_quantification = method(self)
+		array_component_quantification = method()
 
 		self.component_quantification = pd.DataFrame(array_component_quantification,
 			columns=["component_{}".format(i) for i in range(self.W.shape[1])],
@@ -81,11 +75,24 @@ class Analysis:
 
 		return array_component_quantification
 
+	def component_standard_q(self):
+		l = len(self.edges)
+
+		q = np.zeros((l,self.n_components))
+
+		for ll,el in enumerate(self.edges):
+			for k in range(self.n_components):
+				q[ll,k] = self.W[self.model.xsection_idx[el],k]
+
+		q*=100/q.sum(0)[np.newaxis,:]
+
+		return q
+
 
 
 	def _default_component_quantification_method(self):
 
-		qm = default_q_methods[(self._built_G,self._decomposition_method)]["component_quantification"]
+		qm = default_q_methods[(self.analysis_description["model_type"],self.analysis_description["decomposition"]["method"])]["component_quantification"]
 
 		return getattr(self,qm)
 
@@ -98,7 +105,7 @@ class Analysis:
 	def get_chemical_maps(self,method=None,quantified=True):
 
 		if method is None:
-			method = self._default_spatial_quantification_method(self)
+			method = self._default_spatial_quantification_method()
 
 		array_spatial_quantification = method(self)
 

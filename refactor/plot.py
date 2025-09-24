@@ -44,7 +44,7 @@ class Plots:
 			ax = plt.subplot(r,c,ik+1)
 			ax.set_title(edge)
 			for i in range(self.n_components):
-				ii,ff=self.find_index(self.fine_structure_ranges[edge])
+				ii,ff=find_index(self.energy_axis,self.fine_structure_ranges[edge])
 				if normalize:
 					plt.plot(self.energy_axis[ii:ff],norm(self.get_edge_from_component(i,edge).data[ii:ff]))
 				else:
