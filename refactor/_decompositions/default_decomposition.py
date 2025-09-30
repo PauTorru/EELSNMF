@@ -26,13 +26,13 @@ class _Default:
 	def _default_update_W(self):
 		WHHt = self.W@self.H@self.H.T
 		num = self.GtX@self.H.T 
-		denum = self. GtG@WHHt
+		denum = self. GtG@WHHt+self.eps
 		self.W*=num/denum
 
 	def _default_update_H(self):
 		WH = self.W@self.H
 		num = self.W.T@self.GtX
-		denum = self.W.T@self.GtG@WH
+		denum = self.W.T@self.GtG@WH+self.eps
 		self.H*=num/denum
 
 

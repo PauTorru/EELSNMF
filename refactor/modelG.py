@@ -97,7 +97,7 @@ class ModelG:
 		backgrounds = None,
 		model_type = "deltas",
 		xsection_type="Kohl",
-		):
+		**kwargs):
 
 		"""
 		Parameters
@@ -149,7 +149,7 @@ class ModelG:
 		self.analysis_description["model_type"]=model_type
 
 
-		self.model = MODEL_REGISTRY[model_type](self)
+		self.model = MODEL_REGISTRY[model_type](self,**kwargs)
 
 	
 
@@ -246,8 +246,82 @@ class Deltas(BaseModel):
 
 
 class ConvolvedSingle(BaseModel):
-	def __init__(self,parent):
-		pass
+	def __init__(self,parent,low_loss_spectrum):
+		super.__init__()
+		self.parent=parent
+		assert len(low_loss_spectrum.data.shape)==1 #single spectrum, not SI
+		self.llspectrum_data = low_loss_spectrum.data
+		self.llaxis = self.low_loss_spectrum.axes_manager[-1].axis
+
+		# convolution expects same spectral shape
+		if self.llspectrum_data.shape[-1]>G.shape[0]:
+			self.llspectrum_data=self.llspectrum_data[:G.shape[0]]
+		elif self.llspectrum_data.shape[-1]<G.shape[0]:
+			missing = G.shape[0]-self.llspectrum_data.shape[-1]
+			self.llspectrum_data = np.pad(self.llspectrum_data,(0,missing),mode="constant",constant_values=(0,0))
+		else:
+			pass
+
+
+		G0_convolved = self.parent._G0.copy()
+
+		for i in range(self.n_background,G0_convolved.shape[1]): #convolve xsections, not backgrounds
+			G0_convolved[:,i] = convolve(self.parent._G0[:,i],self.llspectrum_data)
+
+		#set xsections to 0 on the fine structure ranges:
+		self.xsection_idx = {}
+		for i,l in enumerate(self.parent.edges):
+			self.xsection_idx[l] = self.parent.n_background+i
+
+
+		for k,v in self.parent.fine_structure_ranges.items():
+
+			ii,ff = find_index(self.parent.energy_axis,v)
+			l = self.xsection_idx[k]
+
+			G0_convolved[ii:ff,l] = 0 
+
+
+		#fine structure elements: shifted low-loss
+		freeGs=[]
+		freeGs_sizes=[]
+		o = self.llspectrum_data.argmax()
+		for k,v in self.fine_structure_ranges.items():
+			ii,ff = self.ax.value2index(v)
+			l = ff-ii+1  #this overlaps with cropped xsection. problematic?
+			freeG = np.zeros((self.energy_size,l))
+			freeGs_sizes.append(l)
+			for r,i in enumerate(range(ii,ff+1)):
+
+				#put the lldata into freeG so that o coincides with i
+				if i>o:
+					freeG[i-o:,r]=self.llspectrum_data[:-(i-o)]/self.llspectrum_data[:-(i-o)].sum()
+				elif i<o:
+					freeG[:-(o-i),r]=self.llspectrum_data[o-i:]/self.llspectrum_data[o-i:].sum()
+
+				else:#i==o
+					freeG[:,r]=self.llspectrum_data/self.llspectrum_data.sum()
+			freeGs.append(freeG)
+
+		self.G=np.concatenate([G0_convolved]+freeGs,axis=1).astype(self.dtype)
+		self.Gf_sizes=freeGs_sizes
+		self.Gf = np.concatenate(freeGs,axis=1).astype(self.dtype)
+		self._G_structure = [self.parent._G0.shape[1]]+self.Gf_sizes
+		self._edge_slices = { k:np.s_[i:f] for k,i,f in zip(self.parent.edges,np.cumsum(self._G_structure)[:-1],np.cumsum(self._G_structure)[1:])}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 #class SumRule
 

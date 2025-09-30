@@ -1,7 +1,8 @@
 import numpy as np
 from sklearn.decomposition._nmf import _initialize_nmf as initialize_nmf
 from tqdm import tqdm
-from ._default_decomposition import _Default
+from ._decompositions.default_decomposition import Default
+from ._decompositions.cupy_default_decomposition import Cupy_Default
 try:
 	import cupy as cp
 	CUPY_AVAILABLE = True
@@ -10,10 +11,12 @@ except:
 	print("cupy not available")
 
 
-class Decomposition(_Default):
+class Decomposition(Default, Cupy_Default):
 	_DECOMPOSITION_CHOICES = {#(model_type,use_cupy)
 		("deltas",False):"_default_decomposition",
-		("deltas",True):"_cupy_decomposition",
+		("deltas",True):"_cupy_default_decomposition",
+		("convolved_single",False):"_default_decomposition",
+		("convolved_single",True):"_cupy_default_decomposition",
 		}
 
 	def decomposition(self,n_components,
