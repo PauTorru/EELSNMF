@@ -123,6 +123,8 @@ class ModelG:
 		if not low_loss is None:
 			self.ll = low_loss
 			self.Xll = low_loss.data.reshape(self.X.data.shape)#low_loss needs to have the same shape (spectrally too) as core_loss
+		else:
+			self.ll = None
 
 		
 		self.fine_structure_ranges=fine_structure_ranges

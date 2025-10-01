@@ -4,6 +4,9 @@ from tqdm import tqdm
 try:
 	import cupy as cp
 	CUPY_AVAILABLE = True
+except:
+	CUPY_AVAILABLE = False
+	print("cupy not available")
 
 
 class Cupy_Default:

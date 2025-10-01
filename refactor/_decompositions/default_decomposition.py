@@ -9,7 +9,7 @@ except:
 	print("cupy not available")
 
 
-class _Default:
+class Default:
 	def _default_init_WH(self):
 
 		assert not self.G is None

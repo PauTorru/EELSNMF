@@ -17,14 +17,14 @@ def load(fname):
 class EELSNMF(ModelG,Decomposition,Plots,Analysis):
 
 	def __getstate__(self): #to avoid hspy objects during pickling
-		state = super().__get_state__()
+		state = self.__dict__.copy()
 		#state = self.__dict__.copy()
 		for i in self._hspy:
 			del state[i]
 		return state
 
 	def __setstate__(self,state):
-		super().__dict__.update(state)
+		self.__dict__.update(state)
 
 
 
@@ -94,7 +94,7 @@ class EELSNMF(ModelG,Decomposition,Plots,Analysis):
 		self.X = self.cl.data.reshape((-1,self.energy_size)).T.astype(self.dtype)
 
 		self._m = ["G","X","W","H","GtG","GtX"] 
-		self._hsyp = ["cl","ll"] #will be skipped when pickling
+		self._hspy = ["cl","ll"] #will be skipped when pickling
 
 		self.analysis_description = {}
 
