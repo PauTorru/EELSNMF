@@ -60,3 +60,73 @@ def convolve(a,b):
 	b_pad/=b_pad.sum()
 	conv = sc.signal.fftconvolve(a_pad,b_pad,mode="valid",axes=-1)[:d]
 	return conv
+
+
+def torch_deco(X, G, rank, max_iter=500, lr=1e-2, device="cpu",W_init=None,H_init=None):
+    """
+    Minimize ||X - G W H||_F^2 using Adam + Softplus parameterization.
+    
+    Args:
+        X: (m x n) target matrix
+        G: (m x p) fixed matrix
+        rank: latent dimension (inner size of W, H)
+        max_iter: number of optimization iterations
+        lr: learning rate
+        device: "cpu" or "cuda"
+    
+    Returns:
+        W, H such that X ≈ G W H
+
+    Example: W,H = factorization_with_fixed_G(deco.X,deco.G,5,max_iter=10000,lr=1e-1,
+                                 W_init = torch.from_numpy(deco.W).float(),H_init=torch.from_numpy(deco.H).float())
+    deco.W=W.numpy()
+	deco.H=H.numpy()
+    """
+    X, G = torch.from_numpy(X).float(), torch.from_numpy(G).float()
+    X, G = X.to(device), G.to(device)
+    m, n = X.shape
+    _, p = G.shape  # G is (m x p)
+
+    # Raw parameters (unconstrained)
+    # Initialize raw parameters
+    if W_init is not None:
+        # Invert softplus to get raw parameter values
+        W = nn.Parameter(W_init.to(device))
+    else:
+        W = nn.Parameter(torch.randn(p, rank, device=device))
+        
+    if H_init is not None:
+        H = nn.Parameter(H_init.to(device))
+    else:
+        H = nn.Parameter(torch.randn(rank, n, device=device))
+
+    optimizer = optim.Adam([W, H], lr=lr)
+    loss_fn = nn.MSELoss()
+    #scheduler = optim.lr_scheduler.StepLR(optimizer, step_size=1000, gamma=0.9)
+
+    for it in range(max_iter):
+        optimizer.zero_grad()
+
+        # Enforce non-negativity
+        #W = torch.nn.functional.softplus(W_raw)
+        #H = torch.nn.functional.softplus(H_raw)
+
+        # Reconstruction: G W H
+        X_hat = G @ W @ H
+
+        # Loss
+        loss = loss_fn(X_hat, X)
+
+        # Backprop + update
+        loss.backward()
+        optimizer.step()
+        #scheduler.step()
+        with torch.no_grad():
+            W.clamp_(min=0)
+            H.clamp_(min=0)
+
+        if (it+1) % 100 == 0:
+            print(f"Iter {it+1}, Loss={loss.item():.6f}")
+
+    return W.detach(), H.detach()
+
