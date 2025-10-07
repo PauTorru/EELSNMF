@@ -81,6 +81,17 @@ class Cupy_Default:
 		self.G = cp.array(self.G)
 		self.H = cp.array(self.H)
 
+		if hasattr(self,"W_init"):
+			if not self.W_init is None:
+				self.W_init=cp.array(self.W_init)
+		if hasattr(self,"W_fixed_bool"):
+			if not self.W_fixed_bool is None:
+				self.W_fixed_bool=cp.array(self.W_fixed_bool)
+		if hasattr(self,"W_fixed_values"):
+			if not self.W_fixed_values is None:
+				self.W_fixed_values=cp.array(self.W_fixed_values)
+
+
 	def _cp2np(self):
 		self.X = self.X.get()
 		self.W = self.W.get()
@@ -88,3 +99,12 @@ class Cupy_Default:
 		self.H = self.H.get()
 		self.GtG  = self.GtG.get()
 		self.GtX  = self.GtX.get()
+		if hasattr(self,"W_init"):
+			if not self.W_init is None:
+				self.W_init=self.W_init.get()
+		if hasattr(self,"W_fixed_bool"):
+			if not self.W_fixed_bool is None:
+				self.W_fixed_bool=self.W_fixed_bool.get()
+		if hasattr(self,"W_fixed_values"):
+			if not self.W_fixed_values is None:
+				self.W_fixed_values=self.W_fixed_values.get()

@@ -14,11 +14,11 @@ default_q_methods = {
 	"component_quantification":"component_standard_q",
 	"spatial_quantification":"spatial_standard_q"
 	},
-	("deltas","standard_cupy"):{
+	("deltas",'_cupy_default_decomposition'):{
 	"component_quantification":"component_standard_q",
 	"spatial_quantification": "spatial_standard_q"
 	},
-	("convolved_single","standard_cupy"):{
+	("convolved_single",'_cupy_default_decomposition'):{
 	"component_quantification":"component_standard_q",
 	"spatial_quantification":"spatial_standard_q"
 	},

@@ -62,7 +62,7 @@ class Decomposition(Default, Cupy_Default):
 
 	def apply_fix_W(self):
 		if not self.W_fixed_bool is None:
-			self.W[self.W_fixed_bool]=self.W_fixed_values
+			self.W[self.W_fixed_bool]=self.W_fixed_values[self.W_fixed_bool]
 
 
 

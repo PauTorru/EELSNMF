@@ -20,7 +20,8 @@ class EELSNMF(ModelG,Decomposition,Plots,Analysis):
 		state = self.__dict__.copy()
 		#state = self.__dict__.copy()
 		for i in self._hspy:
-			del state[i]
+			if i in state.keys():
+				del state[i]
 		return state
 
 	def __setstate__(self,state):
@@ -115,7 +116,7 @@ class EELSNMF(ModelG,Decomposition,Plots,Analysis):
 				setattr(self,m,getattr(self,m).astype(dtype))
 		return
 
-	def save(self, fname, path=None, save_hspy_objects = False):
+	def save(self, fname, path=None, save_hspy_objects = False,overwrite=False):
 		"""
 		Save the EELSNMF object. This method uses pickle.
 		EELSNMF objects contain some hyperspy classes (self.cl). Usually these are not necessary once the analysis has been performed,
@@ -130,14 +131,21 @@ class EELSNMF(ModelG,Decomposition,Plots,Analysis):
 		path: str
 			path where the file will be saved
 
-
 		save_hspy_objects: bool
+			Save cl,ll objects separaterly
+
+		overwrite: bool
+			Check if file exists and decide to overwrite it or not
 		"""
 		if fname[-4:]==".pkl":
 			fname=fname[:-4]
 
 		if path is None:
 			path = os.getcwd()
+
+		if os.path.exists(os.path.join(path,fname+".pkl")) and not overwrite:
+			print("File already exists")
+			return
 
 		for ss in self._hspy:
 			if hasattr(self,ss):
