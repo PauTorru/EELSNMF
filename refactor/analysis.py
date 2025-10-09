@@ -14,11 +14,11 @@ default_q_methods = {
 	"component_quantification":"component_standard_q",
 	"spatial_quantification":"spatial_standard_q"
 	},
-	("deltas",'_cupy_default_decomposition'):{
+	("deltas","_cupy_default_decomposition"):{
 	"component_quantification":"component_standard_q",
 	"spatial_quantification": "spatial_standard_q"
 	},
-	("convolved_single",'_cupy_default_decomposition'):{
+	("convolved_single","_cupy_default_decomposition"):{
 	"component_quantification":"component_standard_q",
 	"spatial_quantification":"spatial_standard_q"
 	},
@@ -64,7 +64,7 @@ class Analysis:
 
 		array_component_quantification = method()
 
-		self.component_quantification = pd.DataFrame(array_component_quantification,
+		self.component_quantification = pd.DataFrame(np.round(array_component_quantification,2),
 			columns=["component_{}".format(i) for i in range(self.W.shape[1])],
 			index = [i.split("_")[0] for i in self.edges])
 

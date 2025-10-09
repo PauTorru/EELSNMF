@@ -28,6 +28,7 @@ class Decomposition(Default, Cupy_Default):
 								W_init = None,
 								W_fixed_bool = None,
 								W_fixed_values = None,
+								H_init = None,
 								error_skip_step=10,
 								eps=1e-10):
 		
@@ -53,6 +54,7 @@ class Decomposition(Default, Cupy_Default):
 		self.W_init=W_init
 		self.W_fixed_bool=W_fixed_bool
 		self.W_fixed_values=W_fixed_values
+		self.H_init = H_init
 
 		decomposition_method = self._DECOMPOSITION_CHOICES[(self.analysis_description["model_type"],self.analysis_description["decomposition"]["use_cupy"])]
 		self.analysis_description["decomposition"]["method"]=decomposition_method
