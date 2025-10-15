@@ -1,7 +1,4 @@
-
-import hyperspy.api as hs
-import pandas as pd
-import numpy as np
+from .imports import *
 
 
 
@@ -88,6 +85,14 @@ class Analysis:
 
 		return q
 
+	def spatial_standard_q(self):
+		N = np.zeros((len(self.edges),self.H.shape[1]))
+	    i=0
+	    for k,v in self.model.xsection_idx.items():
+	        N[i,:] = self.W[v]@self.H
+	    return N.reshape((-1,)+self.spatial_shape)
+
+
 
 
 	def _default_component_quantification_method(self):
@@ -98,16 +103,16 @@ class Analysis:
 
 	def _default_spatial_quantification_method(self):
 
-		qm = default_q_methods[(self._built_G,self._decomposition_method)]["spatial_quantification"]
+		qm = default_q_methods[(self.analysis_description["model_type"],self.analysis_description["decomposition"]["method"])]["spatial_quantification"]
 
 		return getattr(self,qm)
 
-	def get_chemical_maps(self,method=None,quantified=True):
+	def get_chemical_maps(self,quantified=True,method=None):
 
 		if method is None:
-			method = self._default_spatial_quantification_method()
+			method = self._default_spatial_quantification_method
 
-		array_spatial_quantification = method(self)
+		array_spatial_quantification = method()
 
 		if quantified:
 			array_spatial_quantification*=100/array_spatial_quantification.sum(0)[np.newaxis,...]

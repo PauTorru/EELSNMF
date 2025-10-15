@@ -1,7 +1,4 @@
-import matplotlib.pyplot as plt
-import matplotlib as mpl
-import seaborn as sns
-import numpy as np
+from .imports import *
 from .utils import *
 
 
@@ -53,9 +50,9 @@ class Plots:
 		plt.tight_layout()
 
 
-	def plot_chemical_maps(self,quantified=True):
+	def plot_chemical_maps(self,quantified=True,method=None):
 		
-		qmaps=self.get_chemical_maps(quantified)
+		qmaps=self.get_chemical_maps(quantified,method)
 		plt.figure("Quantified Chemical Maps")
 		plt.clf()
 		r,c=find_2factors(len(self.edges))

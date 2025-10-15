@@ -1,16 +1,4 @@
-
-import numpy as np
-import scipy as sc
-import pyEELSMODEL.api as em
-import pyEELSMODEL
-from pyEELSMODEL.components.linear_background import LinearBG
-from pyEELSMODEL.components.CLedge.zezhong_coreloss_edgecombined import ZezhongCoreLossEdgeCombined
-from pyEELSMODEL.components.CLedge.kohl_coreloss_edgecombined import KohlLossEdgeCombined
-from pyEELSMODEL.components.MScatter.mscatterfft import MscatterFFT
-from pyEELSMODEL.components.MScatter.mscatter import Mscatter
-from pyEELSMODEL.components.gdoslin import GDOSLin
-from pyEELSMODEL.fitters.linear_fitter import LinearFitter
-import hyperspy.api as hs
+from .imports import *
 from .utils import *
 
 

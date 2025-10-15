@@ -1,14 +1,7 @@
-import numpy as np
-from sklearn.decomposition._nmf import _initialize_nmf as initialize_nmf
-from tqdm import tqdm
+
 from ._decompositions.default_decomposition import Default
 from ._decompositions.cupy_default_decomposition import Cupy_Default
-try:
-	import cupy as cp
-	CUPY_AVAILABLE = True
-except:
-	CUPY_AVAILABLE = False
-	print("cupy not available")
+from .imports import *
 
 
 class Decomposition(Default, Cupy_Default):

@@ -1,5 +1,4 @@
-import numpy as np
-import scipy as sc
+from .imports import *
 import torch
 import torch.nn as nn
 import torch.optim as optim

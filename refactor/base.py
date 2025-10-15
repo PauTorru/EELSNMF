@@ -1,13 +1,11 @@
-
-import hyperspy.api as hs
-import numpy as np
+from .imports import *
 from .modelG import ModelG
 from .decompositions import Decomposition
 from .plot import Plots
 from .utils import *
 from .analysis import Analysis
-import pickle as pkl
-import os
+
+
 
 
 def load(fname):
