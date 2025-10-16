@@ -87,10 +87,11 @@ class Analysis:
 
 	def spatial_standard_q(self):
 		N = np.zeros((len(self.edges),self.H.shape[1]))
-	    i=0
-	    for k,v in self.model.xsection_idx.items():
-	        N[i,:] = self.W[v]@self.H
-	    return N.reshape((-1,)+self.spatial_shape)
+		i=0
+		for k,v in self.model.xsection_idx.items():
+			N[i,:] = self.W[v]@self.H
+			i+=1
+		return N.reshape((-1,)+self.spatial_shape)
 
 
 
@@ -110,7 +111,7 @@ class Analysis:
 	def get_chemical_maps(self,quantified=True,method=None):
 
 		if method is None:
-			method = self._default_spatial_quantification_method
+			method = self._default_spatial_quantification_method()
 
 		array_spatial_quantification = method()
 
