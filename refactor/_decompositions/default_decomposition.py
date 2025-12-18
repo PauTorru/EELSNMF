@@ -45,8 +45,7 @@ class Default:
 			self.GtX = self.G.T@self.X
 			self.GtG = self.G.T@self.G
 
-		if any(getattr(self,i).dtype!=self.dtype for i in self._m):
-			self.change_dtype(self.dtype)
+		self.enforce_dtype()
 
 		error_0 = abs(self.X-self.G@self.W@self.H).sum()
 		self.error_log=[error_0]
@@ -78,5 +77,4 @@ class Default:
 				self.H = np.maximum(self.H, self.eps)
 
 
-	def _default_get_model(self):
-		return self.G@self.W@self.H
+	

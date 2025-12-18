@@ -1,15 +1,22 @@
 
 from ._decompositions.default_decomposition import Default
 from ._decompositions.cupy_default_decomposition import Cupy_Default
+from ._decompositions.default_kldivergence_decomposition import Default_KL
+from ._decompositions.cupy_default_kldivergence_decomposition import Cupy_Default_KL
+from ._decompositions.cupy_utils import Cupy_Utils
 from .imports import *
 
 
-class Decomposition(Default, Cupy_Default):
+class Decomposition(Default, Cupy_Default, Default_KL, Cupy_Default_KL,Cupy_Utils):
 	_DECOMPOSITION_CHOICES = {#(model_type,use_cupy)
-		("deltas",False):"_default_decomposition",
-		("deltas",True):"_cupy_default_decomposition",
-		("convolved_single",False):"_default_decomposition",
-		("convolved_single",True):"_cupy_default_decomposition",
+		("deltas",False,"Frobenius"):"_default_decomposition",
+		("deltas",True,"Frobenius"):"_cupy_default_decomposition",
+		("convolved_single",False,"Frobenius"):"_default_decomposition",
+		("convolved_single",True,"Frobenius"):"_cupy_default_decomposition",
+		("deltas",False,"KLdivergence"):"_default_kl_decomposition",
+		("deltas",True,"KLdivergence"):"_cupy_default_kl_decomposition",
+		("convolved_single",False,"KLdivergence"):"_default_kl_decomposition",
+		("convolved_single",True,"KLdivergence"):"_cupy_default_kl_decomposition",
 		}
 
 	def decomposition(self,n_components,
@@ -23,7 +30,9 @@ class Decomposition(Default, Cupy_Default):
 								W_fixed_values = None,
 								H_init = None,
 								error_skip_step=10,
-								eps=1e-10):
+								eps=1e-10,
+								rescale_WH=False,
+								metric = "Frobenius"):
 		
 
 		self.n_components = n_components
@@ -32,6 +41,8 @@ class Decomposition(Default, Cupy_Default):
 		self.error_skip_step = error_skip_step
 		self.init_nmf=init_nmf
 		self.eps=eps
+		self.rescale_WH = rescale_WH
+		self.metric=metric
 
 
 		self.analysis_description["decomposition"]={}
@@ -41,24 +52,47 @@ class Decomposition(Default, Cupy_Default):
 		self.analysis_description["decomposition"]["use_cupy"] = use_cupy and CUPY_AVAILABLE
 
 		self.analysis_description["decomposition"]["Fix_W"] = not W_fixed_bool is None
-
+		self.analysis_description["decomposition"]["metric"] = self.metric
 
 		self.random_state_nmf=random_state_nmf
 		self.W_init=W_init
 		self.W_fixed_bool=W_fixed_bool
 		self.W_fixed_values=W_fixed_values
 		self.H_init = H_init
+		if metric == "KLdivergence":
+			self._m += ["GW","X_over_GWH","GTsum1"]
+		self._m +=["W_init","W_fixed_bool","W_fixed_values","H_init"]
+		self._m = list(set(self._m))
 
-		decomposition_method = self._DECOMPOSITION_CHOICES[(self.analysis_description["model_type"],self.analysis_description["decomposition"]["use_cupy"])]
+		decomposition_method = self._DECOMPOSITION_CHOICES[(self.analysis_description["model_type"],self.analysis_description["decomposition"]["use_cupy"],self.analysis_description["decomposition"]["metric"])]
 		self.analysis_description["decomposition"]["method"]=decomposition_method
 
 		method = getattr(self,decomposition_method)
 		method()
+		
+		#clear memory
+		for attr in ["GtX","GtG","GW","X_over_GWH","GTsum1"]:
+			if hasattr(self,attr):
+				delattr(self,attr)
+			if attr in self._m:
+				self._m.remove(attr)
+		gc.collect()
 
 	def apply_fix_W(self):
 		if not self.W_fixed_bool is None:
 			self.W[self.W_fixed_bool]=self.W_fixed_values[self.W_fixed_bool]
 
+	def _default_get_model(self):
+		return self.G@self.W@self.H
+
+	def enforce_dtype(self):
+		for attr in self._m:
+			if hasattr(self,attr):
+				value = getattr(self,attr,None)
+				if value is not None and hasattr(value,"dtype"):
+					if value.dtype!= self.dtype:
+						setattr(self,attr,value.astype(self.dtype,copy=False))
+		
 
 
 

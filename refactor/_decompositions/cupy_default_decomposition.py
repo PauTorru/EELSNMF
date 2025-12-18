@@ -25,8 +25,7 @@ class Cupy_Default:
 			self.GtX = self.G.T@self.X
 			self.GtG = self.G.T@self.G
 
-		if any(getattr(self,i).dtype!=self.dtype for i in self._m):
-			self.change_dtype(self.dtype)
+		self.enforce_dtype()
 
 		self._np2cp()
 
@@ -65,38 +64,3 @@ class Cupy_Default:
 
 		self._cp2np()
 
-	def _np2cp(self):
-		self.GtX = cp.array(self.GtX)
-		self.GtG = cp.array(self.GtG)
-		self.X = cp.array(self.X) 
-		self.W = cp.array(self.W)
-		self.G = cp.array(self.G)
-		self.H = cp.array(self.H)
-
-		if hasattr(self,"W_init"):
-			if not self.W_init is None:
-				self.W_init=cp.array(self.W_init)
-		if hasattr(self,"W_fixed_bool"):
-			if not self.W_fixed_bool is None:
-				self.W_fixed_bool=cp.array(self.W_fixed_bool)
-		if hasattr(self,"W_fixed_values"):
-			if not self.W_fixed_values is None:
-				self.W_fixed_values=cp.array(self.W_fixed_values)
-
-
-	def _cp2np(self):
-		self.X = self.X.get()
-		self.W = self.W.get()
-		self.G = self.G.get()
-		self.H = self.H.get()
-		self.GtG  = self.GtG.get()
-		self.GtX  = self.GtX.get()
-		if hasattr(self,"W_init"):
-			if not self.W_init is None:
-				self.W_init=self.W_init.get()
-		if hasattr(self,"W_fixed_bool"):
-			if not self.W_fixed_bool is None:
-				self.W_fixed_bool=self.W_fixed_bool.get()
-		if hasattr(self,"W_fixed_values"):
-			if not self.W_fixed_values is None:
-				self.W_fixed_values=self.W_fixed_values.get()
