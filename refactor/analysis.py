@@ -19,6 +19,14 @@ default_q_methods = {
 	"component_quantification":"component_standard_q",
 	"spatial_quantification":"spatial_standard_q"
 	},
+	("deltas","_default:kl_decomposition"):{
+	"component_quantification":"component_standard_q",
+	"spatial_quantification": "spatial_standard_q"
+	},
+	("deltas","_cupy_default_kl_decomposition"):{
+	"component_quantification":"component_standard_q",
+	"spatial_quantification": "spatial_standard_q"
+	},
 
 	###################################################### Not implemented:
 

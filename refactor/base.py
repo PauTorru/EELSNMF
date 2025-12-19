@@ -92,7 +92,7 @@ class EELSNMF(ModelG,Decomposition,Plots,Analysis):
 		self.dtype =np.float64
 		self.X = self.cl.data.reshape((-1,self.energy_size)).T.astype(self.dtype)
 
-		self._m = ["G","X","W","H","GtG","GtX"] 
+		self._m = ["G","X","W","H"] 
 		self._hspy = ["cl","ll"] #will be skipped when pickling
 
 		self.analysis_description = {}
