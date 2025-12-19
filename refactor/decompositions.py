@@ -32,6 +32,7 @@ class Decomposition(Default, Cupy_Default, Default_KL, Cupy_Default_KL,Cupy_Util
 								error_skip_step=10,
 								eps=1e-10,
 								rescale_WH=False,
+								KL_rescaling_per_iter = False,
 								metric = "Frobenius"):
 		
 
@@ -43,6 +44,7 @@ class Decomposition(Default, Cupy_Default, Default_KL, Cupy_Default_KL,Cupy_Util
 		self.eps=eps
 		self.rescale_WH = rescale_WH
 		self.metric=metric
+		self.KL_rescaling_per_iter = KL_rescaling_per_iter
 
 
 		self.analysis_description["decomposition"]={}

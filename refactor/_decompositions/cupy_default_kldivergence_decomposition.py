@@ -69,6 +69,9 @@ class Cupy_Default_KL:
 					self.W /= scale
 					self.H *= scale.T
 
+				if self.KL_rescaling_per_iter:
+					self.KL_rescaling()
+
 		self._cp2np()
 
 	def _cupy_KL_divergence_error(self):

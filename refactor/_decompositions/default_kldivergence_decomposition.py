@@ -24,6 +24,7 @@ class Default_KL:
 		
 		self.get_model = self._default_get_model
 		self._default_init_WH()
+		self.KL_rescaling()
 		self.GTsum1=self.G.T.sum(1)
 		if not hasattr(self, "X_over_GWH"):
 			self.X_over_GWH = np.empty_like(self.X)
@@ -65,6 +66,9 @@ class Default_KL:
 					self.W /= scale
 					self.H *= scale.T
 
+				if self.KL_rescaling_per_iter:
+					self.KL_rescaling()
+
 	def KL_divergence_error(self):
 		if hasattr(self,"GW"): #not the actual error (H is updated after computing self.GW) but faster to compute
 			return (self.X * np.log((self.X + self.eps)/(self.GW@self.H + self.eps))
@@ -72,3 +76,8 @@ class Default_KL:
 		else:
 			return (self.X * np.log((self.X + self.eps)/(self.G@self.W@self.H + self.eps))
 				- self.X + self.G@self.W@self.H).sum()
+
+	def KL_rescaling(self):
+		scale = self.get_model().sum()/self.X.sum()
+		self.H /= scale
+		return
