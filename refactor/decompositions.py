@@ -63,6 +63,8 @@ class Decomposition(Default, Cupy_Default, Default_KL, Cupy_Default_KL,Cupy_Util
 		self.H_init = H_init
 		if metric == "KLdivergence":
 			self._m += ["GW","X_over_GWH","GTsum1"]
+		elif metric == "Frobenius":
+			self._m += [,"GtG","GtX"]
 		self._m +=["W_init","W_fixed_bool","W_fixed_values","H_init"]
 		self._m = list(set(self._m))
 
@@ -94,6 +96,29 @@ class Decomposition(Default, Cupy_Default, Default_KL, Cupy_Default_KL,Cupy_Util
 				if value is not None and hasattr(value,"dtype"):
 					if value.dtype!= self.dtype:
 						setattr(self,attr,value.astype(self.dtype,copy=False))
+
+	def _default_init_WH(self):
+
+		assert not self.G is None
+		if not self.W_init is None:
+			self.W = self.W_init.copy()
+			if self.H_init is None:
+				self.H = np.abs(np.linalg.lstsq(self.G@self.W, self.X,rcond=None)[0])
+			else:
+				self.H = self.H_init.copy()
+		elif self.H_init is None:
+			GW,self.H = initialize_nmf(self.X,self.n_components,init=self.init_nmf,random_state=self.random_state_nmf)
+			self.W = np.abs(np.linalg.lstsq(self.G, GW,rcond=None)[0])
+
+		else: # no W_init, yes H_init
+			self.H = self.H_init.copy()
+			GW = np.linalg.lstsq(self.H.T,self.X.T,rcond=None)[0].T
+			self.W = np.abs(np.linalg.lstsq(self.G, GW,rcond=None)[0])
+
+
+		self.H = np.nan_to_num(self.H, nan=self.eps, posinf=self.eps, neginf=self.eps)
+		self.W = np.nan_to_num(self.W, nan=self.eps, posinf=self.eps, neginf=self.eps)
+
 		
 
 
