@@ -64,7 +64,7 @@ class Decomposition(Default, Cupy_Default, Default_KL, Cupy_Default_KL,Cupy_Util
 		if metric == "KLdivergence":
 			self._m += ["GW","X_over_GWH","GTsum1"]
 		elif metric == "Frobenius":
-			self._m += [,"GtG","GtX"]
+			self._m += ["GtG","GtX"]
 		self._m +=["W_init","W_fixed_values","H_init"]
 		self._m = list(set(self._m))
 
