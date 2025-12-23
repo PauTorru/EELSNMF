@@ -65,7 +65,7 @@ class Decomposition(Default, Cupy_Default, Default_KL, Cupy_Default_KL,Cupy_Util
 			self._m += ["GW","X_over_GWH","GTsum1"]
 		elif metric == "Frobenius":
 			self._m += [,"GtG","GtX"]
-		self._m +=["W_init","W_fixed_bool","W_fixed_values","H_init"]
+		self._m +=["W_init","W_fixed_values","H_init"]
 		self._m = list(set(self._m))
 
 		decomposition_method = self._DECOMPOSITION_CHOICES[(self.analysis_description["model_type"],self.analysis_description["decomposition"]["use_cupy"],self.analysis_description["decomposition"]["metric"])]
