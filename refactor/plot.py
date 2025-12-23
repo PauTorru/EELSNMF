@@ -61,6 +61,7 @@ class Plots:
 			ax.set_title(edge)
 			plt.imshow(qmaps[edge])
 			plt.colorbar()
+		plt.tight_layout()
 
 	def plot_average_model(self):
 		plt.figure("Model")
@@ -68,6 +69,7 @@ class Plots:
 		plt.plot(self.energy_axis,self.X.mean(1),label="Data")
 		plt.plot(self.energy_axis,self.get_model().mean(1),label="Model")
 		plt.legend()
+		plt.tight_layout()
 
 	def plot_energy_ranges(self):
 		plt.figure("Edges energy ranges")
@@ -76,7 +78,7 @@ class Plots:
 		ax=plt.gca()
 		colors=plt.rcParams['axes.prop_cycle'].by_key()['color']
 		c=-1
-		for k,v in self.model.fine_structure_ranges.items():
+		for k,v in self.fine_structure_ranges.items():
 			c+=1
 			ii,ff = v
 			rect = mpl.patches.Rectangle((ii, 0.), ff-ii, 1,
@@ -86,6 +88,7 @@ class Plots:
 		ax.set_ylim(0,1)
 		ax.set_yticks([])
 		plt.legend()
+		plt.tight_layout()
 	
 
 
