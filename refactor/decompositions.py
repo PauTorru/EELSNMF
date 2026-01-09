@@ -4,6 +4,7 @@ from ._decompositions.cupy_default_decomposition import Cupy_Default
 from ._decompositions.default_kldivergence_decomposition import Default_KL
 from ._decompositions.cupy_default_kldivergence_decomposition import Cupy_Default_KL
 from ._decompositions.cupy_utils import Cupy_Utils
+from ._decompositions.alternate_bg_elnes import Alternate_BG_ELNES
 from .imports import *
 
 
@@ -33,7 +34,9 @@ class Decomposition(Default, Cupy_Default, Default_KL, Cupy_Default_KL,Cupy_Util
 								eps=1e-10,
 								rescale_WH=False,
 								KL_rescaling_per_iter = False,
-								metric = "Frobenius"):
+								metric = "Frobenius",
+								decomposition_method = None,
+								**kwargs):
 		
 
 		self.n_components = n_components
@@ -52,6 +55,10 @@ class Decomposition(Default, Cupy_Default, Default_KL, Cupy_Default_KL,Cupy_Util
 		if use_cupy and not CUPY_AVAILABLE:
 			print("cupy not available; falling back to cpu")
 		self.analysis_description["decomposition"]["use_cupy"] = use_cupy and CUPY_AVAILABLE
+		if use_cupy and CUPY_AVAILABLE:
+			self.xp = cp
+		else:
+			self.xp = np
 
 		self.analysis_description["decomposition"]["Fix_W"] = not W_fixed_bool is None
 		self.analysis_description["decomposition"]["metric"] = self.metric
@@ -68,11 +75,12 @@ class Decomposition(Default, Cupy_Default, Default_KL, Cupy_Default_KL,Cupy_Util
 		self._m +=["W_init","W_fixed_values","H_init"]
 		self._m = list(set(self._m))
 
-		decomposition_method = self._DECOMPOSITION_CHOICES[(self.analysis_description["model_type"],self.analysis_description["decomposition"]["use_cupy"],self.analysis_description["decomposition"]["metric"])]
+		if decomposition_method is None:
+			decomposition_method = self._DECOMPOSITION_CHOICES[(self.analysis_description["model_type"],self.analysis_description["decomposition"]["use_cupy"],self.analysis_description["decomposition"]["metric"])]
+		
 		self.analysis_description["decomposition"]["method"]=decomposition_method
-
 		method = getattr(self,decomposition_method)
-		method()
+		method(**kwargs)
 		
 		#clear memory
 		for attr in ["GtX","GtG","GW","X_over_GWH","GTsum1"]:
