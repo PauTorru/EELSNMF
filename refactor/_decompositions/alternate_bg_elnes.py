@@ -27,7 +27,7 @@ class Alternate_BG_ELNES:
 			self._np2cp()
 		
 		energy_mask_elnes = self.xp.zeros_like(self.G[:,0]).astype("bool")
-		energy_mask_bg = mask_elnes.copy()
+		energy_mask_bg = energy_mask_elnes.copy()
 		for r in self.model._edge_slices.values():
 			energy_mask_elnes[r] = True
 
