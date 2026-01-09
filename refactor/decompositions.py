@@ -8,7 +8,7 @@ from ._decompositions.alternate_bg_elnes import Alternate_BG_ELNES
 from .imports import *
 
 
-class Decomposition(Default, Cupy_Default, Default_KL, Cupy_Default_KL,Cupy_Utils):
+class Decomposition(Default, Cupy_Default, Default_KL, Cupy_Default_KL,Cupy_Utils,Alternate_BG_ELNES):
 	_DECOMPOSITION_CHOICES = {#(model_type,use_cupy)
 		("deltas",False,"Frobenius"):"_default_decomposition",
 		("deltas",True,"Frobenius"):"_cupy_default_decomposition",
