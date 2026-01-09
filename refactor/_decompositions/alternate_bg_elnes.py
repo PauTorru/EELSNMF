@@ -9,7 +9,7 @@ class Alternate_BG_ELNES:
 		self.W[idxs,:]*=num/denum
 
 	def _alternate_update_H(self,idxs,GtX,GtG):
-		WH = self.W[idxs,:]@self.H
+		WH = self.W[idxs,:]@self.H # full update
 		num = self.W[idxs,:].T@GtX
 		denum = self.W[idxs,:].T@GtG@WH+self.eps
 		self.H*=num/denum
@@ -34,11 +34,13 @@ class Alternate_BG_ELNES:
 		
 		
 		#if not hasattr(self,"GtX") and not hasattr(self,"GtG"): # in case of full deconvolution they are already created
+		self.GtG = self.G.T@self.G
+		self.GtX = self.G.T@self.X
 		self.GtX_bg = self.G[energy_mask_bg,idxs_bg].T@self.X[energy_mask_bg,:] #####need to optimize to not use masks?????
 		self.GtG_bg = self.G[energy_mask_bg,idxs_bg].T@self.G[energy_mask_bg,idxs_bg]
 		self.GtX_elnes = self.G[energy_mask_elnes,idxs_elnes].T@self.X[energy_mask_elnes,:]
 		self.GtG_elnes = self.G[energy_mask_elnes,idxs_elnes].T@self.G[energy_mask_elnes,idxs_elnes]
-		self._m+=["GtX_bg","GtX_elnes","GtG_bg","GtG_elnes"]
+		self._m+=["GtX_bg","GtX_elnes","GtG_bg","GtG_elnes","GtG","GtX"]
 
 		self.enforce_dtype()
 
@@ -53,14 +55,14 @@ class Alternate_BG_ELNES:
 
 					self.apply_fix_W()
 
-					self._alternate_update_H(idxs_bg,self.GtX_bg,self.GtG_bg)
+					self._alternate_update_H(idxs_bg,self.GtX,self.GtG)
 				
 				for _ in range(iters_elnes):
 					self._alternate_update_W(idxs_elnes,self.GtX_elnes,self.GtG_elnes)
 
 					self.apply_fix_W()
 
-					self._alternate_update_H(idxs_elnes,self.GtX_elnes,self.GtG_elnes)
+					self._alternate_update_H(idxs_elnes,self.GtX,self.GtG)
 				
 				if i%self.error_skip_step==0:
 					error = float(self.xp.abs(self.X-self.G@self.W@self.H).sum())
@@ -79,7 +81,7 @@ class Alternate_BG_ELNES:
 				self.W = self.xp.maximum(self.W, self.eps)
 				self.H = self.xp.maximum(self.H, self.eps)
 
-		for attr in ["GtX_bg","GtG_bg","GtX_elnes","GtG_elnes"]:
+		for attr in ["GtX_bg","GtG_bg","GtX_elnes","GtG_elnes","GtG","GtX"]:
 			if hasattr(self,attr):
 				delattr(self,attr)
 		if self.analysis_description["decomposition"]["use_cupy"]:
