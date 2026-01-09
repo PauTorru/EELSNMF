@@ -22,6 +22,9 @@ class Alternate_BG_ELNES:
 		last_xsection = max(self.model.xsection_idx.values())
 		idxs_bg = slice(None,last_xsection+1)
 		idxs_elnes =slice(last_xsection+1,None)
+
+		if self.analysis_description["decomposition"]["use_cupy"]:
+			self._np2cp()
 		
 		#if not hasattr(self,"GtX") and not hasattr(self,"GtG"): # in case of full deconvolution they are already created
 		self.GtX_bg = self.G[:,idxs_bg].T@self.X
@@ -72,3 +75,5 @@ class Alternate_BG_ELNES:
 		for attr in ["GtX_bg","GtG_bg","GtX_elnes","GtG_elnes"]:
 			if hasattr(self,attr):
 				delattr(self,attr)
+		if self.analysis_description["decomposition"]["use_cupy"]:
+			self._cp2np()
