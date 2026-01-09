@@ -27,29 +27,22 @@ class Alternate_BG_ELNES:
 			self._np2cp()
 		
 		energy_mask_elnes = self.xp.zeros_like(self.G[:,0]).astype("bool")
-		energy_mask_bg = energy_mask_elnes.copy()
 		for r in self.model._edge_slices.values():
 			energy_mask_elnes[r] = True
 
-		energy_mask_bg = self.xp.logical_not(mask_elnes)
-		
-		mask_elnes = self.xp.zeros_like(self.G).astype("bool")
-		mask_elnes[energy_mask_elnes,idxs_elnes] = True
-		mask_bg = self.xp.zeros_like(self.G).astype("bool")
-		mask_bg[energy_mask_bg,idxs_bg] = True
-
+		energy_mask_bg = self.xp.logical_not(energy_mask_elnes)
 		
 		
 		#if not hasattr(self,"GtX") and not hasattr(self,"GtG"): # in case of full deconvolution they are already created
-		self.GtX_bg = self.G[mask_bg].T@self.X[energy_mask_bg,:]
-		self.GtG_bg = self.G[mask_bg].T@self.G[mask_bg]
-		self.GtX_elnes = self.G[mask_elnes].T@self.X[energy_mask_elnes,:]
-		self.GtG_elnes = self.G[mask_elnes].T@self.G[mask_elnes]
+		self.GtX_bg = self.G[energy_mask_bg,idxs_bg].T@self.X[energy_mask_bg,:] #####need to optimize to not use masks?????
+		self.GtG_bg = self.G[energy_mask_bg,idxs_bg].T@self.G[energy_mask_bg,idxs_bg]
+		self.GtX_elnes = self.G[energy_mask_elnes,idxs_elnes].T@self.X[energy_mask_elnes,:]
+		self.GtG_elnes = self.G[energy_mask_elnes,idxs_elnes].T@self.G[energy_mask_elnes,idxs_elnes]
 		self._m+=["GtX_bg","GtX_elnes","GtG_bg","GtG_elnes"]
 
 		self.enforce_dtype()
 
-		error_0 = abs(self.X-self.G@self.W@self.H).sum()
+		error_0 = float(self.xp.abs(self.X-self.G@self.W@self.H).sum())
 		self.error_log=[error_0]
 
 		with tqdm(range(self.max_iters),mininterval=5) as pbar:
@@ -72,7 +65,7 @@ class Alternate_BG_ELNES:
 				if i%self.error_skip_step==0:
 					error = float(self.xp.abs(self.X-self.G@self.W@self.H).sum())
 					self.error_log.append(error)
-					rel_change=self.xp.abs((error_0-error)/error_0)
+					rel_change=float(self.xp.abs((error_0-error)/error_0))
 
 					if rel_change<=self.tol and i>2:
 						print("Converged after {} iterations".format(i))
