@@ -53,16 +53,16 @@ class Alternate_BG_ELNES:
 				for _ in range(iters_bg):
 					self._alternate_update_W(idxs_bg,self.GtX_bg,self.GtG_bg)
 
-					self.apply_fix_W()
+					#self.apply_fix_W()
 
-					self._alternate_update_H(self.GtX,self.GtG)
+					#self._alternate_update_H(self.GtX,self.GtG)
 				
 				for _ in range(iters_elnes):
 					self._alternate_update_W(idxs_elnes,self.GtX_elnes,self.GtG_elnes)
 
-					self.apply_fix_W()
+				self.apply_fix_W()
 
-					self._alternate_update_H(self.GtX,self.GtG)
+				self._alternate_update_H(self.GtX,self.GtG)
 				
 				if i%self.error_skip_step==0:
 					error = float(self.xp.abs(self.X-self.G@self.W@self.H).sum())
@@ -71,6 +71,7 @@ class Alternate_BG_ELNES:
 
 					if rel_change<=self.tol and i>2:
 						print("Converged after {} iterations".format(i))
+						self._cp2np()
 						return
 					
 					pbar.set_postfix({"error":error,"relative change":rel_change})
