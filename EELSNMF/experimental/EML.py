@@ -2,9 +2,12 @@ from ..imports import *
 from ..utils import moving_average, norm
 
 try:
-	from whittaker_eilers import WhittakerSmoother
-except:
-	print("Whittaker-Eilers smoother not available")
+    from whittaker_eilers import WhittakerSmoother
+except ImportError:
+    raise ImportError(
+        "WhittakerSmoother is required for EML processing. "
+        "Please install it using: pip install 'EELSNMF[EML]'"
+    )
 
 def we_smooth(array,lmbda=1e2,order=2):
 	whittaker_smoother = WhittakerSmoother(lmbda=lmbda, order=order, data_length = array.shape[-1])

@@ -1,4 +1,11 @@
 from ..imports import *
+try:
+    from torh
+except ImportError:
+    raise ImportError(
+        "torch is required for TorchDecompositions "
+        "Please install it using: pip install 'EELSNMF[torch]'"
+    )
 import torch
 import torch.nn as nn
 import torch.optim as optim
