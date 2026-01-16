@@ -20,15 +20,20 @@ pip install git+[https://github.com/PauTorru/EELSNMF.git](https://github.com/Pau
 ### Installation with Optional Capabilities
 Specific experimental functionalities are available as "extras". You can install them by appending the flags in brackets:
 
-* **GPU Support:** ```bash
+* **GPU Support:** 
+```bash
 pip install "EELSNMF[gpu] @ git+https://github.com/PauTorru/EELSNMF.git"
 ```
-* **EML data processing:** ```pip install "EELSNMF[EML] @ git+https://github.com/PauTorru/EELSNMF.git"
+* **EML data processing:** 
+```pip install "EELSNMF[EML] @ git+https://github.com/PauTorru/EELSNMF.git"
 ```
-* **Torch Solvers:** ```bash
+* **Torch Solvers:** 
+```bash
 pip install git+[https://github.com/PauTorru/EELSNMF.git](https://github.com/PauTorru/EELSNMF.git)
 ```
-* **Full Suite:** ```pip install "EELSNMF[all] @ git+https://github.com/PauTorru/EELSNMF.git"
+* **Full Suite:** 
+```bash
+pip install "EELSNMF[all] @ git+https://github.com/PauTorru/EELSNMF.git"
 ```
 
 *Note: If you are using ZSH (default on macOS), ensure you use quotes around the package name to avoid shell errors.*
