@@ -25,11 +25,12 @@ Specific experimental functionalities are available as "extras". You can install
 pip install "EELSNMF[gpu] @ git+https://github.com/PauTorru/EELSNMF.git"
 ```
 * **EML data processing:** 
-```pip install "EELSNMF[EML] @ git+https://github.com/PauTorru/EELSNMF.git"
+```bash
+pip install "EELSNMF[EML] @ git+https://github.com/PauTorru/EELSNMF.git"
 ```
 * **Torch Solvers:** 
 ```bash
-pip install git+[https://github.com/PauTorru/EELSNMF.git](https://github.com/PauTorru/EELSNMF.git)
+install "EELSNMF[torch] @ git+https://github.com/PauTorru/EELSNMF.git"
 ```
 * **Full Suite:** 
 ```bash
