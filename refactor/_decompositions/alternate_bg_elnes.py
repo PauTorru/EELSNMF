@@ -1,4 +1,5 @@
 from ..imports import *
+from ..utils import find_index
 
 class Alternate_BG_ELNES:
 	
@@ -6,12 +7,18 @@ class Alternate_BG_ELNES:
 		WHHt = self.W[idxs,:]@self.H@self.H.T
 		num = GtX@self.H.T 
 		denum = GtG@WHHt+self.eps
-		self.W[idxs,:]*=num/denum
+		self.W[idxs,:]*=(num/denum)[idxs,:]
 
-	def _alternate_update_H(self,GtX,GtG):
-		WH = self.W@self.H # full update
-		num = self.W.T@GtX
-		denum = self.W.T@GtG@WH+self.eps
+	def _alternate_update_W2(self,idxs,GtX,GtG):
+		WHHt = self.W@self.H@self.H.T
+		num = GtX@self.H.T 
+		denum = GtG@WHHt+self.eps
+		self.W[idxs,:]*=(num/denum)[idxs,:]
+
+	def _alternate_update_H(self,idxs,GtX,GtG):
+		WH = self.W[:,:]@self.H # full update
+		num = self.W[:,:].T@GtX
+		denum = self.W[:,:].T@GtG@WH+self.eps
 		self.H*=num/denum
 
 
@@ -27,8 +34,9 @@ class Alternate_BG_ELNES:
 			self._np2cp()
 		
 		energy_mask_elnes = self.xp.zeros_like(self.G[:,0]).astype("bool")
-		for r in self.model._edge_slices.values():
-			energy_mask_elnes[r] = True
+		for r in self.fine_structure_ranges.values():
+			ii,ff = find_index(self.energy_axis,r)
+			energy_mask_elnes[ii:ff] = True
 
 		energy_mask_bg = self.xp.logical_not(energy_mask_elnes)
 		
@@ -38,8 +46,8 @@ class Alternate_BG_ELNES:
 		self.GtX = self.G.T@self.X
 		self.GtX_bg = self.G[energy_mask_bg,idxs_bg].T@self.X[energy_mask_bg,:] #####need to optimize to not use masks?????
 		self.GtG_bg = self.G[energy_mask_bg,idxs_bg].T@self.G[energy_mask_bg,idxs_bg]
-		self.GtX_elnes = self.G[energy_mask_elnes,idxs_elnes].T@self.X[energy_mask_elnes,:]
-		self.GtG_elnes = self.G[energy_mask_elnes,idxs_elnes].T@self.G[energy_mask_elnes,idxs_elnes]
+		#self.GtX_elnes = self.G[energy_mask_elnes,idxs_elnes].T@self.X[energy_mask_elnes,:]
+		#self.GtG_elnes = self.G[energy_mask_elnes,idxs_elnes].T@self.G[energy_mask_elnes,idxs_elnes]
 		self._m+=["GtX_bg","GtX_elnes","GtG_bg","GtG_elnes","GtG","GtX"]
 
 		self.enforce_dtype()
@@ -53,16 +61,16 @@ class Alternate_BG_ELNES:
 				for _ in range(iters_bg):
 					self._alternate_update_W(idxs_bg,self.GtX_bg,self.GtG_bg)
 
-					#self.apply_fix_W()
+					self.apply_fix_W()
 
-					#self._alternate_update_H(self.GtX,self.GtG)
-				
+					#self._alternate_update_H(idxs_bg,self.GtX_bg,self.GtG_bg)
+				#self._alternate_update_H(idxs_elnes,self.GtX,self.GtG)
 				for _ in range(iters_elnes):
-					self._alternate_update_W(idxs_elnes,self.GtX_elnes,self.GtG_elnes)
+					self._alternate_update_W2(idxs_elnes,self.GtX,self.GtG)
 
-				self.apply_fix_W()
+					self.apply_fix_W()
 
-				self._alternate_update_H(self.GtX,self.GtG)
+				self._alternate_update_H(idxs_elnes,self.GtX,self.GtG)
 				
 				if i%self.error_skip_step==0:
 					error = float(self.xp.abs(self.X-self.G@self.W@self.H).sum())
