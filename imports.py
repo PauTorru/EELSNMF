@@ -19,6 +19,8 @@ from pyEELSMODEL.fitters.linear_fitter import LinearFitter
 from sklearn.decomposition._nmf import _initialize_nmf as initialize_nmf
 from tqdm import tqdm
 import hyperspy.api as hs
+import colorcet as cc
+import shutil
 
 try:
 	import cupy as cp
