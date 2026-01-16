@@ -149,7 +149,7 @@ class EELSNMF(ModelG,Decomposition,Plots,Analysis):
 			if hasattr(self,ss):
 				s = getattr(self,ss)
 				if save_hspy_objects:
-					s.save(os.path.join(path,"_".join(fname,ss,".hspy")))
+					s.save(os.path.join(path,"_".join([fname,ss,".hspy"])))
 
 		with open(os.path.join(path,fname+".pkl"),"wb") as f:
 			pkl.dump(self,f)
