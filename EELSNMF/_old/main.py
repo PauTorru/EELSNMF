@@ -234,6 +234,10 @@ class EELSNMF:
 	_prepare_single_spectrum_convolution_G = Gprep._prepare_single_spectrum_convolution_G
 	_prepare_dirac_G = Gprep._prepare_dirac_G
 
+	def _set_dtype(self):
+		for m in [self.G,self.H,self.W,self.X]:
+			m=m.astype(self.dtype)
+
 
 	def _init_XWH(self,W_init=None):
 		if not hasattr(self,"G") or self.G is None:
@@ -266,6 +270,7 @@ class EELSNMF:
 			return self._fullconv_decomposition(W_init=W_init)
 
 		self._init_XWH(W_init)
+		self._set_dtype()
 
 		#fixed products
 		if not hasattr(self,"GtX") and not hasattr(self,"GtG"): # in case of full deconvolution they are already created
