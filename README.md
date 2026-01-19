@@ -2,7 +2,7 @@
 
 [![License: CC BY-NC 4.0](https://img.shields.io/badge/License-CC%20BY--NC%204.0-lightgrey.svg)](https://creativecommons.org/licenses/by-nc/4.0/)
 
-**EELSNMF** is a Python library for the advanced decomposition of Electron Energy Loss Spectroscopy (EELS) datasets using Non-negative Matrix Factorization (NMF). 
+**EELSNMF** is a Python library for the decomposition of Electron Energy Loss Spectroscopy (EELS) datasets using Non-negative Matrix Factorization (NMF). 
 
 The library implements and extends the mathematical logic described in:
 > **Adrien Teurtrie** *et al*, "Non-negative matrix factorization for spectroscopic data analysis", *Mach. Learn.: Sci. Technol.* **5** 045050 (2024). [DOI: 10.1088/2632-2153/ad9192](https://iopscience.iop.org/article/10.1088/2632-2153/ad9192).
