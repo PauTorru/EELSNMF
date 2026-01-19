@@ -343,7 +343,7 @@ def kill_channels_from_mask(mask,signal):
 	coords2 = []
 	coords2_set = set(coords2)
 	print("Calulating spikes ranges...")
-	for c in tqdm.tqdm(coords):
+	for c in tqdm(coords):
 		x,y,e=c
 
 		if ((x,y,e+1) in coords_set) and ((x,y,e-1) in coords_set):
@@ -371,7 +371,7 @@ def kill_channels_from_mask(mask,signal):
 			coords2.append((x,y,(e,e)))
 
 	print("Removing spikes...")
-	for c2 in tqdm.tqdm(list(coords2_set)):
+	for c2 in tqdm(list(coords2_set)):
 		#print(c2)
 		kill_channel_range(signal,c2)
 	return
