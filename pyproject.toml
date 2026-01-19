@@ -1,0 +1,32 @@
+[build-system]
+requires = ["setuptools>=61.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "EELSNMF"
+version = "0.1.0"
+description = "A package for NMF analysis taylored to EELS data"
+readme = "README.md"
+authors = [{ name = "Pau Torruella", email = "pau.torruellabesa@epfl.ch" }]
+license = { file = "LICENSE.txt" }
+dependencies = [
+    "numpy",
+    "hyperspy",
+    "tqdm",
+    "matplotlib",
+    "scipy",
+    "seaborn",
+    "pandas",
+    "scikit-learn",
+    "colorcet",
+    "pyEELSMODEL"
+]
+
+[project.optional-dependencies]
+gpu = ["cupy"]
+EML = ["whittaker-eilers"]
+torch = ["torch"] 
+all = ["cupy", "whittaker-eilers", "torch"]
+
+[project.urls]
+"Homepage" = "https://github.com/PauTorru/EELSNMF"
