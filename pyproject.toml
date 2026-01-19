@@ -12,6 +12,8 @@ license = { file = "LICENSE.txt" }
 dependencies = [
     "numpy",
     "hyperspy[all]",
+    "exspy",
+    "rosettasciio",
     "tqdm",
     "matplotlib",
     "scipy",
