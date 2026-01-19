@@ -11,7 +11,7 @@ authors = [{ name = "Pau Torruella", email = "pau.torruellabesa@epfl.ch" }]
 license = { file = "LICENSE.txt" }
 dependencies = [
     "numpy",
-    "hyperspy",
+    "hyperspy[all]",
     "tqdm",
     "matplotlib",
     "scipy",
