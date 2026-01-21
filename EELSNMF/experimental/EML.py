@@ -90,7 +90,7 @@ class EML_Processing():
 			fomd = fom(si.data+100)#(abs(dif)/si.data.sum(-1)[:,:,np.newaxis])
 			#fom/=fom.sum(-1)[:,:,np.newaxis]
 
-		
+			fomd = np.nan_to_num(fomd,nan=0.,posinf=0.,neginf=0.)
 			his,bins = np.histogram(fomd.ravel(),bins=self.n_bins)
 			j = si.estimate_elbow_position(explained_variance_ratio=his*100/his.sum(),max_points=len(his))-1
 			self.threshold = bins[j]
@@ -120,7 +120,9 @@ class EML_Processing():
 		self.despiked = True
 
 		if self.long_despike>1:
-			long_despike(self,count_lim=self.long_despike)
+			count_lim= self.long_despike
+			self.long_despike = 0
+			long_despike(self,count_lim=count_lim)
 
 	def create_denoised(self):
 		if self.despiked:

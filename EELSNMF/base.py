@@ -14,12 +14,14 @@ def load(fname):
 
 class EELSNMF(ModelG,Decomposition,Plots,Analysis):
 
-	def __getstate__(self): #to avoid hspy objects during pickling
+	def __getstate__(self): #to avoid objects during pickling
 		state = self.__dict__.copy()
 		#state = self.__dict__.copy()
 		for i in self._hspy:
 			if i in state.keys():
 				del state[i]
+		if "xp" in state.keys():
+			del state["xp"]
 		return state
 
 	def __setstate__(self,state):

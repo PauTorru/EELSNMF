@@ -98,7 +98,7 @@ def match_axis(s,new_axis):
 		out = np.zeros ((sx,new_axis.shape[0]))
 	
 		for xi in range(sx):
-			interp = sci.interp1d(xf,yf[xi],kind="cubic")
+			interp = sc.interpolate.interp1d(xf,yf[xi],kind="cubic")
 			out[xi,:]=interp(new_axis)
 	
 	if s.data.ndim==3:
@@ -110,7 +110,7 @@ def match_axis(s,new_axis):
 	
 		for xi in range(sx):
 			for yi in range(sy):
-				interp = sci.interp1d(xf,yf[xi,yi],kind="cubic")
+				interp = sc.interpolate.interp1d(xf,yf[xi,yi],kind="cubic")
 				out[xi,yi,:]=interp(new_axis)
 
 	out =  hs.signals.Signal1D(out)
@@ -123,8 +123,8 @@ class ListOfSI():
 	def __init__(self,slist,energy_axis=None):
 		
 		self.len = len(slist)
-		if all_arrays_equal([i.axis_manager[-1].axis for i in slist]):
-			self.eaxis = slist[0].axes_manager[-1].axis
+		if all_arrays_equal([i.axes_manager[-1].axis for i in slist]):
+			self.energy_axis = slist[0].axes_manager[-1].axis
 			self.slist=slist
 		else:
 			matched_list = []
@@ -139,20 +139,30 @@ class ListOfSI():
 		self.edim = self.dim_list[0,-1]
 		assert all(self.dim_list[:,-1]==self.edim)
 
-		self.unfolded_data = np.zeros(((self.dim_list[:,0]*self.dim_list[:,1]).sum(),self.dim_list[0,-1]))
+		unfolded_data = np.zeros(((self.dim_list[:,0]*self.dim_list[:,1]).sum(),self.dim_list[0,-1]))
 
 		filled=0
 		self.spatial_dim_list=[]
 		for s in self.slist:
 			sx,sy,se = s.data.shape
 			self.spatial_dim_list.append(sx*sy)
-			self.unfolded_data[filled:filled+sx*sy,:]=s.data.reshape((-1,self.edim))
+			unfolded_data[filled:filled+sx*sy,:]=s.data.reshape((-1,self.edim))
 			filled+=sx*sy
 
-		self.unfolded_si = hs.signals.Signal1D(self.unfolded_data)
-		self.unfolded_si.axes_manager[-1].offset = self.eaxis[0]
-		self.unfolded_si.axes_manager[-1].scale = slist[0].axes_manager[-1].scale
+		self.unfolded_si = hs.signals.Signal1D(unfolded_data)
+		self.unfolded_si.axes_manager[-1].offset = self.energy_axis[0]
+		self.unfolded_si.axes_manager[-1].scale = self.energy_axis[1]-self.energy_axis[0]
 		return
+
+	@property
+	def unfolded_data(self):
+		return self.unfolded_si.data
+
+	@unfolded_data.setter
+	def unfolded_data(self,value):
+		self.unfolded_si.data=np.asarray(value)
+
+
 
 	def fold_array(self,array):
 		out=[]
@@ -162,7 +172,7 @@ class ListOfSI():
 			filled+=n
 		return out
 
-	def plot_decomposition_results(self,component,type="decomposition"):
+	def plot_decomposition_results(self,component,type="decomposition",figure = 0):
 		self.len+=1
 		self.find_plot_structure()
 		self.len-=1
@@ -173,12 +183,12 @@ class ListOfSI():
 			l = self.unfolded_si.get_bss_loadings()
 			f = self.unfolded_si.get_bss_factors()
 			
-		plt.figure(0)
+		plt.figure(figure)
 		plt.clf()
 		self.plot_array(l.data[component],False)
 		r,c = self.plot_structure
 		ax = plt.subplot(r,c,r*c)
-		plt.plot(f.data[component])
+		plt.plot(self.energy_axis,f.data[component])
 
 	def plot_cluster_results(self):
 		self.len+=1
@@ -211,7 +221,7 @@ class ListOfSI():
 		self.plot_structure =(rows,cols)
 		return
 
-	def plot_array(self,array,extra_row=True,vmin=None,vmax=None,cmap=None):
+	def plot_array(self,array,extra_row=False,vmin=None,vmax=None,cmap=None):
 		ims = self.fold_array(array)
 		r,c = self.plot_structure
 		if extra_row:
