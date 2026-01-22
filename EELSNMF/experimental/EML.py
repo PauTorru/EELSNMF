@@ -10,16 +10,34 @@ except ImportError:
     )
 
 def we_smooth(array,lmbda=1e2,order=2):
+    """
+	Perform Whittaker-Eilers smoothing on a 1D array
+
+    Parameters
+    ----------
+    array : array
+        
+    lmbda : float
+    	Smoothing coefficient.
+         (Default value = 1e2)
+    order : int
+    	Smoothing order
+         (Default value = 2)
+
+    Returns
+    -------
+    array
+    	The smoothed array
+
+    """
 	whittaker_smoother = WhittakerSmoother(lmbda=lmbda, order=order, data_length = array.shape[-1])
 	smoothed_data = whittaker_smoother.smooth(array)
 	return np.array(smoothed_data)
 
 
 class EML_Processing():
-	"""
-	Class to manage the analysis of data from EML lab.
+    """Class to manage the analysis of data from EML lab."""
 
-	"""
 	def __init__(self,sh,sl,**kwargs):
 		"""Parameters
 		---------------
@@ -50,6 +68,20 @@ class EML_Processing():
 			setattr(self,key,value)
 
 	def save_results(self,dirname,metadata_average_s=None):
+		"""
+
+		Parameters
+		----------
+		dirname : str
+		    
+		metadata_average_s :
+			metadata to add to self.average_spectrum_excluding_vacuum_signal
+		     (Default value = None)
+
+		Returns
+		-------
+
+		"""
 
 		os.makedirs(dirname,exist_ok=True)
 
@@ -73,6 +105,9 @@ class EML_Processing():
 
 
 	def zlp_align(self):
+		"""
+		Aligns self.low_loss and self.core_loss by the position of ZLP.
+		"""
 
 
 		self.low_loss.align_zero_loss_peak(also_align=[self.core_loss])
@@ -82,6 +117,18 @@ class EML_Processing():
 		self.zlp_aligned=True
 
 	def despike(self,si,threshold="auto"):
+		"""
+		Removes X-ray spikes in the data. It stores the despiked dataset in self.core_loss_despiked.
+
+		Parameters
+		----------
+		si : which SI to perform it. Eg self.core_loss
+		    
+		threshold : float or "auto"
+		     (Default value = "auto")
+
+
+		"""
 		self.core_loss_despiked = si.deepcopy()
 		
 		if threshold == "auto":
@@ -125,6 +172,7 @@ class EML_Processing():
 			long_despike(self,count_lim=count_lim)
 
 	def create_denoised(self):
+		"""Applies automated PCA denoising """
 		if self.despiked:
 			self.core_loss_despiked.decomposition(True)
 			self.denoised = self.core_loss_despiked.get_decomposition_model(self.core_loss_despiked.estimate_elbow_position())
@@ -136,6 +184,15 @@ class EML_Processing():
 		self.denoise_applied=True
 
 	def create_pyeels_fit(self,use="denoised"):
+		"""
+		Creates the pyeels fit for the selected datase in "use"
+		Parameters
+		----------
+		use :{"denoised","despiked","raw"}
+		     (Default value = "denoised")
+
+
+		"""
 		if use =="denoised":
 			data = self.denoised.data
 		elif use =="despiked":
@@ -223,6 +280,19 @@ class EML_Processing():
 
 
 	def average_spectrum_excluding_vacuum(self,signal,mask=None):
+		"""
+
+		Parameters
+		----------
+		signal :
+		    
+		mask :
+		     (Default value = None)
+
+		Returns
+		-------
+
+		"""
 		if mask is None:
 			mask = signal.data.sum(-1)>skimage.filters.threshold_otsu(signal.data.sum(-1))
 		out = signal.inav[0,0]
@@ -233,6 +303,19 @@ class EML_Processing():
 
 
 	def remove_plural_scattering_via_model_fitting(self,element,edges):
+		"""
+
+		Parameters
+		----------
+		element :
+		    
+		edges :
+		    
+
+		Returns
+		-------
+
+		"""
 		if not hasattr(self,"fit"):
 			self.create_pyeels_fit()
 
@@ -274,10 +357,41 @@ class EML_Processing():
 		return deconvolved_edge
 
 def fom(data,n=7):
+    """
+	Calulate figure of merit to evalute if there is a spike on a given energy channel or not.
+    Parameters
+    ----------
+    data : array
+        
+    n : int
+    	used as moving average window.
+         (Default value = 7)
+
+    Returns
+    -------
+    array
+
+    """
 	fom = abs(np.diff(data)/moving_average(data,n)[...,:-1])
 	return fom.shape[-1]*fom/fom.sum(-1)[:,:,np.newaxis]
 
 def long_despike(process,dif_lim=0.5,count_lim=10):
+    """
+    Helper function to apply despiking iteratively.
+
+    Parameters
+    ----------
+    process : EML.EML_processing
+        
+    dif_lim :float
+         (Default value = 0.5)
+    count_lim : int
+         (Default value = 10)
+
+    Returns
+    -------
+
+    """
 	#Assumes initial despike has already been performed
 	t0=process.threshold
 	dif =np.inf
@@ -290,18 +404,53 @@ def long_despike(process,dif_lim=0.5,count_lim=10):
 		print("# Despikes : {}".format(count))
 
 def check_element(comp):
+    """
+
+    Parameters
+    ----------
+    comp :
+        
+
+    Returns
+    -------
+
+    """
 	if hasattr(comp,"element"):
 		return comp.element
 	else:
 		return None
 
 def check_edge(comp):
+    """
+
+    Parameters
+    ----------
+    comp :
+        
+
+    Returns
+    -------
+
+    """
 	if hasattr(comp,"edge"):
 		return comp.edge
 	else:
 		return None
 
 def kill_channel(signal,coord):
+    """
+
+    Parameters
+    ----------
+    signal :
+        
+    coord :
+        
+
+    Returns
+    -------
+
+    """
 	x,y,e=coord
 	if e==0:
 		signal.data[x,y,e]=signal.data[x,y,e+1]
@@ -311,6 +460,19 @@ def kill_channel(signal,coord):
 		signal.data[x,y,e]=(signal.data[x,y,e-1]+signal.data[x,y,e+1])/2
 
 def kill_channel_range(signal,coord_range):
+    """
+
+    Parameters
+    ----------
+    signal :
+        
+    coord_range :
+        
+
+    Returns
+    -------
+
+    """
 	x,y,er=coord_range
 	ei,ef=er
 	if ei==ef:
@@ -339,6 +501,19 @@ def kill_channel_range(signal,coord_range):
 	return
 
 def kill_channels_from_mask(mask,signal):
+    """
+
+    Parameters
+    ----------
+    mask :
+        
+    signal :
+        
+
+    Returns
+    -------
+
+    """
 	coords = np.transpose(mask.nonzero())
 	coords = list([list (i) for i in coords])
 	coords_set = set(tuple(c) for c in coords)
@@ -380,6 +555,17 @@ def kill_channels_from_mask(mask,signal):
 
 
 def expand_mask(mask):
+    """
+
+    Parameters
+    ----------
+    mask :
+        
+
+    Returns
+    -------
+
+    """
 	x,y,e=mask.shape
 	mask1 = np.zeros((x,y,e+1))
 	mask1[:,:,:-1]+=mask
@@ -388,6 +574,28 @@ def expand_mask(mask):
 
 
 def load_results(folder,target_file,print_name=False,processing = None):
+    """
+	Loads all the files named target_file in folder and corresponding subfolders.
+    Parameters
+    ----------
+    folder : str or path
+        
+    target_file : str
+        
+    print_name : bool
+         (Default value = False)
+    processing : function
+    	processing(value) is applied to all the loaded files before returning them.
+    	(Useful if some minor processing is needed to the output of load(target_file).
+    	E.g. processing = lamda x: x[-1] selects the core-loss spectrum image of dual eels "STEM SI.dm4" file)
+         (Default value = None)
+
+    Returns
+    -------
+    dict
+    	{file_path:load(file)}
+
+    """
 	"Assumes structure  /folder/tag1/tag2/.../tagn/n/targe_file"
 	results={}
 	extension = target_file.split(".")[-1]
@@ -432,6 +640,17 @@ def load_results(folder,target_file,print_name=False,processing = None):
 
 
 def pkl_load(file):
+    """
+
+    Parameters
+    ----------
+    file :
+        
+
+    Returns
+    -------
+
+    """
 	with open(file,"rb") as f:
 		a = pkl.load(f)
 	return a
@@ -439,6 +658,19 @@ def pkl_load(file):
 
 
 def plot_results(results,**kwargs):
+    """
+	Obsolete
+    Parameters
+    ----------
+    results :
+        
+    **kwargs :
+        
+
+    Returns
+    -------
+
+    """
 	"results is a dictionary with as many parameters as wanted i.e. results[material][beamcurrent][date]=[list of results]"
 	flat = unravel(results)
 
@@ -468,6 +700,19 @@ def plot_results(results,**kwargs):
 
 
 def unravel(d,tag=""):
+    """
+
+    Parameters
+    ----------
+    d :
+        
+    tag :
+         (Default value = "")
+
+    Returns
+    -------
+
+    """
 
 	out={}
 	for k,i in d.items():
