@@ -20,8 +20,8 @@ class Plots:
 		"""
 		Plot the aboundance maps of each component (mathematicall the rows of H)
 		"""
-		if not hasattr(self,"loadings"):
-			self.calculate_loadings()
+		
+		self.calculate_loadings()
 
 		self.plot_structure = find_2factors(self.n_components)
 		plt.figure("Loadings")
