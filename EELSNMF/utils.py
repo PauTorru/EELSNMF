@@ -1,11 +1,36 @@
 from .imports import *
 
 def norm(x):
+    """
+
+    Parameters
+    ----------
+    x : array
+        
+
+    Returns
+    -------
+    array
+    	Array normalized from 0 to 1
+
+    """
 	return (x-x.min())/(x.max()-x.min())
 
 
 def find_2factors(n):
-	#for multipanel plots
+    """
+    Parameters
+    ----------
+    n : int
+        
+
+    Returns
+    -------
+    tuple of ints
+    	Returns two integers (a,b) so that a*b=n
+
+    """
+	
 	rows = int(np.sqrt(n))+1
 	cols = n//rows
 	while rows*cols!=n:
@@ -19,31 +44,46 @@ def find_2factors(n):
 	return (rows,cols)
 
 def find_index(ax,v):
+    """
+	Finds the indices of an array that containt the element closest to a value
+    Parameters
+    ----------
+    ax : array
+    	Array where to look for a given value
+        
+    v : float
+    	Value to look for in the array
+        
+
+    Returns
+    -------
+    int
+    	Index of the element closest to v in ax.
+
+    """
 	if hasattr(v,"__iter__"):
 		return [abs(ax-iv).argmin() for iv in v]
 	else:
 		return abs(ax-v).argmin()
 
 def convolve(a,b):
-	"""1-d convolution. the shape of a,b has to be even.
+    """1-d convolution. the shape of a,b has to be even.
 
-	Parameters
-	----------
+    Parameters
+    ----------
+    a : np.array
+        Typically it will be a column of the unconvolved G matrix.
+    b : np.array
+        Typically it will be a single low loss spectrum
 
-	a: np.array
-		Typically it will be a column of the unconvolved G matrix.
+    Returns
+    -------
 
-	b: np.array
-		Typically it will be a single low loss spectrum
+    array
+    	convolution of a with b.
 
-
-	Returns
-	-------
-
-	C: np.array
-		Typically the low-loss convolved G row.
-
-		"""
+    
+    """
 
 	assert a.shape==b.shape
 	assert a.shape[0]%2==0
@@ -62,16 +102,60 @@ def convolve(a,b):
 
 
 def moving_average(a, n=3):
+    """
+
+    Parameters
+    ----------
+    a : array
+        
+    n : int
+         (Default value = 3)
+         Size of the moving arverage window
+
+    Returns
+    -------
+    array
+
+    """
 	n-=(1-n%2)
 	ret = np.cumsum(a,axis=-1, dtype=float)
 	ret[...,n:] = ret[...,n:] - ret[...,:-n]
 	return np.pad(ret[...,n - 1:] / n,np.array([[0,0],[0,0],[(n-1)//2,(n-1)//2]]),mode="edge")
 
 def all_arrays_equal(array_list):
+    """
+	Check if all arrays in array_list are equal
+    
+    Parameters
+    ----------
+    array_list : list of arrays
+        
+
+    Returns
+    -------
+    bool
+
+    """
 	first_array = array_list[0]
 	return all(np.array_equal(first_array, arr) for arr in array_list[1:])
 
 def match_axis(s,new_axis):
+    """
+
+    Parameters
+    ----------
+    s : hs.signal.Signal1D
+        
+    new_axis : array
+    	the channels of the spectra will match this new_axis.
+        
+
+    Returns
+    -------
+    hs.signal.Signal1D
+    	Signal with the spectral axis matching new_axis
+
+    """
 
 	assert isinstance(s,hs.signals.BaseSignal)
 	assert isinstance(new_axis,np.ndarray)
@@ -120,6 +204,20 @@ def match_axis(s,new_axis):
 	return out
 
 class ListOfSI():
+    """ 
+    Allows processing a list of spectrum images of different sizes as one single dataset.
+
+    To do that, the spectra of the different spectrum images is matched to have the same "calibration" and
+    the spatial dimensions are unfolded, keeping track of the original dimensions.
+
+    Parameters
+    ----------
+    slist : list of hs.signal.Signal1D
+        
+    enery_axis : None or array
+        Axis to which to interpolate all SIs. If None it is assumed that all SI already have the same energy axis.
+    
+    """
 	def __init__(self,slist,energy_axis=None):
 		
 		self.len = len(slist)
@@ -156,13 +254,31 @@ class ListOfSI():
 
 	@property
 	def unfolded_data(self):
+		""" """
 		return self.unfolded_si.data
 
 	@unfolded_data.setter
 	def unfolded_data(self,value):
+		"""	"""
 		self.unfolded_si.data=np.asarray(value)
 
 	def fold_array(self,array):
+		"""
+		Folds array back to the dimension of the original set of spectrum images.
+		The array can have the same spatial dimension (output will be flat 2D images)
+		or the same spatial and spectral dimensions
+		(output will be a list of array with the same dims as the original list of SIs).
+
+		Parameters
+		----------
+		array : array
+		    
+
+		Returns
+		-------
+		list of arrays
+
+		"""
 		out=[]
 		filled=0
 		for n,d in zip(self.spatial_dim_list,self.dim_list):
@@ -175,6 +291,26 @@ class ListOfSI():
 
 
 	def plot_decomposition_results(self,component,type="decomposition",figure = 0):
+		"""
+		Plots decomposition results with loadings in the same shape as original SIs.
+
+		Parameters
+		----------
+		component : int
+			Spectral component index.
+		    
+		type : "decompositon" or "bss"
+		     (Default value = "decomposition")
+		figure : int or str
+		     Name of the figure where the results will be plotted.
+		     (Default value = 0)
+
+
+		Returns
+		-------
+		None
+
+		"""
 		self.len+=1
 		self.find_plot_structure()
 		self.len-=1
@@ -193,6 +329,14 @@ class ListOfSI():
 		plt.plot(self.energy_axis,f.data[component])
 
 	def plot_cluster_results(self):
+		"""
+		Plots cluster analysis results with labels in the same shape as original SIs.
+
+		Returns
+		-------
+		None
+
+		"""
 		self.len+=1
 		self.find_plot_structure()
 		self.len-=1
@@ -213,6 +357,10 @@ class ListOfSI():
 
 
 	def find_plot_structure(self):
+		""" 
+		Finds the optimal panel configuration for the results and stores it in self.plot_structure
+
+		"""
 		rows = int(np.sqrt(self.len))
 		cols = self.len//rows
 		while rows*cols!=self.len:
@@ -224,6 +372,30 @@ class ListOfSI():
 		return
 
 	def plot_array(self,array,extra_row=False,vmin=None,vmax=None,cmap=None):
+		"""
+		Folds and plots an array in the shapes of the original SIs.
+
+		Parameters
+		----------
+		array : array
+		    
+		extra_row : bool
+			Adds an extra row of panels in case extra info wants to be plotted to the figure.
+		     (Default value = False)
+		vmin : float
+			Common vmin passed to plt.imshow for each panel.
+		     (Default value = None)
+		vmax : float
+			Common vmin passed to plt.imshow for each panel.
+		     (Default value = None)
+		cmap : Matplotlib colormap
+		     
+
+		Returns
+		-------
+		plot figure
+
+		"""
 		ims = self.fold_array(array)
 		r,c = self.plot_structure
 		if extra_row:
@@ -238,9 +410,21 @@ class ListOfSI():
 			#plt.colorbar()
 			ax.set_xticks([])
 			ax.set_yticks([])
-		return
+		return plt.gcf()
 
 	def save(self,fname,overwrite=False):
+		"""
+		Saves ListOfSI object. It is saved as a folder with two files SI.hspy for the raw data
+		and object.pkl for the rest of the information about the object. (Original SIs are not saved)
+
+		Parameters
+		----------
+		fname : str
+		    
+		overwrite : bool
+		     (Default value = False)
+
+		"""
 		if os.path.exists(fname) and overwrite:
 			sure = input("About to completely delete current {}, are you sure? (y,n)".format(fname))
 			if sure.lower()=="y":
@@ -260,6 +444,19 @@ class ListOfSI():
 		return
 
 def load_ListOfSI(path):
+    """
+    Loads ListOfSI object from path
+	
+    Parameters
+    ----------
+    path : str or Path
+        
+
+    Returns
+    -------
+    ListOfSI
+
+    """
 	si = hs.load(os.path.join(path,"SI.hspy"))
 	with open(os.path.join(path,"object.pkl"),"rb") as f:
 		out = pkl.load(f)
