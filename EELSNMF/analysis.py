@@ -46,14 +46,33 @@ default_q_methods = {
 
 
 class Analysis:
+    """ Mixin class with chemical analysis functionalities for EELSNMF """
 
 	def calculate_loadings(self):
+		""" """
 		self.loadings = self.H.reshape([-1]+list(self.spatial_shape))
 
 
 
 
 	def get_edge_from_component(self,component_id,edge):
+		"""
+		Extracts the ELNES of edge from component #component_id.
+
+		Parameters
+		----------
+		component_id : int
+		    
+		edge : str
+			str defining the edge. E. g. "Fe_L"
+		    
+
+		Returns
+		-------
+
+		hs.signals.Signal1D
+
+		"""
 
 		data = self.G[:,self.model._edge_slices[edge]]@self.W[self.model._edge_slices[edge],component_id]
 
@@ -61,6 +80,21 @@ class Analysis:
 
 
 	def quantify_components(self, method=None):
+
+		"""
+		Get the chemical quantification of all components acoording to method
+		
+		Parameters
+		----------
+		method : str
+			see valid methods at EELSNMF.analysis.default_q_methods
+		     (Default value = None)
+
+		Returns
+		-------
+		array
+
+		"""
 
 		if method is None:
 			method = self._default_component_quantification_method()
@@ -81,6 +115,7 @@ class Analysis:
 		return array_component_quantification
 
 	def component_standard_q(self):
+		""" standard quantification of a spectral component"""
 		l = len(self.edges)
 
 		q = np.zeros((l,self.n_components))
@@ -94,6 +129,7 @@ class Analysis:
 		return q
 
 	def spatial_standard_q(self):
+		""" pixel per pixel standard quantification"""
 		N = np.zeros((len(self.edges),self.H.shape[1]))
 		i=0
 		for k,v in self.model.xsection_idx.items():
@@ -105,18 +141,37 @@ class Analysis:
 
 
 	def _default_component_quantification_method(self):
+		""" """
 
 		qm = default_q_methods[(self.analysis_description["model_type"],self.analysis_description["decomposition"]["method"])]["component_quantification"]
 
 		return getattr(self,qm)
 
 	def _default_spatial_quantification_method(self):
+		""" """
 
 		qm = default_q_methods[(self.analysis_description["model_type"],self.analysis_description["decomposition"]["method"])]["spatial_quantification"]
 
 		return getattr(self,qm)
 
 	def get_chemical_maps(self,quantified=True,method=None):
+		"""
+		Calculates the abundance maps of all elements in the analysis.
+		Parameters
+		----------
+		quantified : bool
+			If true, normalizes the quantification to 100% at each pixel
+		     (Default value = True)
+		method : 
+			Quantification method to use. If None , falls back to methods defined in .default_q_methods
+		     (Default value = None)
+
+		Returns
+		-------
+		dict
+			Dictionary with the quantification array for each element.
+
+		"""
 
 		if method is None:
 			method = self._default_spatial_quantification_method()
