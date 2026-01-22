@@ -22,8 +22,8 @@ class Plots:
 		"""
 		if not hasattr(self,"loadings"):
 			self.calculate_loadings()
-		if not hasattr(self,"plot_structure"):
-			self.plot_structure = find_2factors(self.n_components)
+
+		self.plot_structure = find_2factors(self.n_components)
 		plt.figure("Loadings")
 		plt.clf()
 		r,c= self.plot_structure
