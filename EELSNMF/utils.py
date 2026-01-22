@@ -67,9 +67,9 @@ def moving_average(a, n=3):
 	ret[...,n:] = ret[...,n:] - ret[...,:-n]
 	return np.pad(ret[...,n - 1:] / n,np.array([[0,0],[0,0],[(n-1)//2,(n-1)//2]]),mode="edge")
 
-def all_arrays_equal(array_list):    
-    first_array = array_list[0]
-    return all(np.array_equal(first_array, arr) for arr in array_list[1:])
+def all_arrays_equal(array_list):
+	first_array = array_list[0]
+	return all(np.array_equal(first_array, arr) for arr in array_list[1:])
 
 def match_axis(s,new_axis):
 
@@ -162,15 +162,17 @@ class ListOfSI():
 	def unfolded_data(self,value):
 		self.unfolded_si.data=np.asarray(value)
 
-
-
 	def fold_array(self,array):
 		out=[]
 		filled=0
 		for n,d in zip(self.spatial_dim_list,self.dim_list):
-			out.append(array[filled:filled+n].reshape(d[:-1]))
+			folded_array = array[filled:filled+n,...].reshape(tuple(d[:-1])+(-1,))
+			if folded_array.shape[-1]==1:
+				folded_array = folded_array[...,0]
+			out.append(folded_array)
 			filled+=n
 		return out
+
 
 	def plot_decomposition_results(self,component,type="decomposition",figure = 0):
 		self.len+=1

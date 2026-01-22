@@ -37,7 +37,10 @@ install "EELSNMF[torch] @ git+https://github.com/PauTorru/EELSNMF.git"
 pip install "EELSNMF[all] @ git+https://github.com/PauTorru/EELSNMF.git"
 ```
 
+Multiple capabilities can be install with e.g. `pip install "EELSNMF[EML,gpu] @ git+https://github.com/PauTorru/EELSNMF.git`.
+
 *Note: If you are using ZSH (default on macOS), ensure you use quotes around the package name to avoid shell errors.*
+
 
 ## Getting Started
 To begin, please refer to the Jupyter Notebook `demo.ipynb`. It provides a step-by-step guide the usage of the library.
