@@ -9,6 +9,7 @@ from .imports import *
 
 
 class Decomposition(Default, Cupy_Default, Default_KL, Cupy_Default_KL,Cupy_Utils,Alternate_BG_ELNES):
+    """Mixin class for the decomposition functionalities of the EELSNMF class """
 	_DECOMPOSITION_CHOICES = {#(model_type,use_cupy)
 		("deltas",False,"Frobenius"):"_default_decomposition",
 		("deltas",True,"Frobenius"):"_cupy_default_decomposition",
@@ -37,6 +38,64 @@ class Decomposition(Default, Cupy_Default, Default_KL, Cupy_Default_KL,Cupy_Util
 								metric = "Frobenius",
 								decomposition_method = None,
 								**kwargs):
+		"""
+
+		Parameters
+		----------
+		n_components : int
+			Number of components for the decomposition
+		    
+		max_iters : int
+			Maximum number of iterations for the decomposition algorithm
+		     (Default value = 100)
+		tol : float
+			Tolerance at which to stop the decomposition (change in total erro between one iteration and the previous one)
+		     (Default value = 1e-6)
+		use_cupy : bool
+			Wheter or not to use GPU acceleration
+		     (Default value = False)
+		init_nmf : str
+			One of {‘random’, ‘nndsvd’, ‘nndsvda’, ‘nndsvdar’, ‘custom’}. see init parameter in sklearn.decomposition.NMF
+		     (Default value = None)
+		random_state_nmf : int
+			Random seed used if init_nmf="random".
+		     (Default value = None)
+		W_init : array
+			Inital W
+		     (Default value = None)
+		W_fixed_bool : array (dtype="bool")
+			Elements at self.W[W_fixed_bool] are fixed
+		     (Default value = None)
+		W_fixed_values : array
+			self.W[W_fixed_bool]=W_fixed_values
+		     (Default value = None)
+		H_init :
+			Initial H.
+		     (Default value = None)
+		error_skip_step : int
+			Calculate full error only every erro_skip_step iterations. Increase for speed if analyzed dataset is very big.
+		     (Default value = 10)
+		eps : float
+			value added to protect agains divisions by 0
+		     (Default value = 1e-10)
+		rescale_WH : bool
+			Only used for metric="KLdivergence"
+			Rescales columns of W to one.
+		     (Default value = False)
+		KL_rescaling_per_iter :
+			Only used for metric="KLdivergence". Rescales the model to accurately capture absolute intensity at each iteration.
+		     (Default value = False)
+		metric : {"Frobenius","KLdivergence"}
+			Minimize the error of the model X=GWH according to this metric.
+		     (Default value = "Frobenius")
+		decomposition_method : str
+			function to be used for decomposition, see values of self._DECOMPOSITION_CHOICES.
+			If None, it is decided according to the model and metric chosen.
+		     (Default value = None)
+		**kwargs : passed to decomposition_method
+
+
+		"""
 		
 
 		self.n_components = n_components
@@ -91,13 +150,16 @@ class Decomposition(Default, Cupy_Default, Default_KL, Cupy_Default_KL,Cupy_Util
 		gc.collect()
 
 	def apply_fix_W(self):
+		""" """
 		if not self.W_fixed_bool is None:
 			self.W[self.W_fixed_bool]=self.W_fixed_values[self.W_fixed_bool]
 
 	def _default_get_model(self):
+		""" """
 		return self.G@self.W@self.H
 
 	def enforce_dtype(self):
+		""" makes sure that all the relevant matrices are of type self.dtype """
 		for attr in self._m:
 			if hasattr(self,attr):
 				value = getattr(self,attr,None)
@@ -106,6 +168,7 @@ class Decomposition(Default, Cupy_Default, Default_KL, Cupy_Default_KL,Cupy_Util
 						setattr(self,attr,value.astype(self.dtype,copy=False))
 
 	def _default_init_WH(self):
+		""" """
 
 		assert not self.G is None
 		if not self.W_init is None:
