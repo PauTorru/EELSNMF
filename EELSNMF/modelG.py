@@ -5,25 +5,20 @@ from .utils import *
 
 
 def convolve(a,b):
-	"""1-d convolution. the shape of a,b has to be even.
+    """1-d convolution. The shape of a,b has to be even.
 
-	Parameters
-	----------
+    Parameters
+    ----------
+    a : np.array
+        Typically it will be a column of the unconvolved G matrix.
+    b : np.array
+        Typically it will be a single low loss spectrum
 
-	a: np.array
-		Typically it will be a column of the unconvolved G matrix.
-
-	b: np.array
-		Typically it will be a single low loss spectrum
-
-
-	Returns
-	-------
-
-	C: np.array
-		Typically the low-loss convolved G row.
-
-		"""
+    Returns
+    -------
+	array
+    
+    """
 
 	assert a.shape==b.shape
 	assert a.shape[0]%2==0
@@ -42,28 +37,30 @@ def convolve(a,b):
 
 
 
-class BaseModel:
-	def __init__(self):
-		pass
-
-	def __getstate__(self):
-		state = self.__dict__.copy()
-		state["parent"] = None
-		return state
-
-	def __setstate__(self, state):
-		self.__dict__.update(state)
-
-	#@property
-	#def G(self):
-	#	if hasattr(self,"G"):
-	#		return self.G
-	#	else:
-	#		return None
-
+#class BaseModel:
+#    """ """
+#	def __init__(self):
+#		pass
+#
+#	def __getstate__(self):
+#		state = self.__dict__.copy()
+#		state["parent"] = None
+#		return state
+#
+#	def __setstate__(self, state):
+#		self.__dict__.update(state)
+#
+#	#@property
+#	#def G(self):
+#	#	if hasattr(self,"G"):
+#	#		return self.G
+#	#	else:
+#	#		return None
+#
 
 
 class ModelG:
+    """ Mixin class for the modelling of the G matrix in EELSNMF objects"""
 	def __getstate__(self):
 		return self.__dict__
 
@@ -75,6 +72,7 @@ class ModelG:
 
 	@property
 	def available_models(self):
+		""" """
 		available_models = ["deltas","convolved_single"]
 		return available_models
 	
@@ -88,23 +86,30 @@ class ModelG:
 		**kwargs):
 
 		"""
+		Builds the G matrix according to model_type.
+
 		Parameters
 		----------
-		low_loss: hs.signals.Signal1D or path
-			Coacquired Low-loss. If supplied it will be used for convolution/deconvolution purposes.
+		low_loss : hs.signal.Signal1d
+			Low-loss corresponding to the same region of main signal.
+			Can be a single spectrum or a spectrum image
+		     (Default value = None)
 
-		backgrounds: int or iterable
-			Number of power-law backgrounds used in the model or their exponents if it is an iterable.
+		fine_structure_ranges : dict
+			Dictionary of ELNES ranges for each edge. E.g. {"O_K":(525.,540.),"Fe_L":(705.,750.)}
+		     (Default value = {})
+		backgrounds : array
+			Exponents of the power-laws to be used for fitting the background.
+		     (Default value = None)
+		model_type : one of EELSNMF.modelG.MODEL_REGISTRY
+		     (Default value = "deltas")
+		xsection_type : "Kohl" or "Zezhong"
+			Cross-section type used from the ones available in pyEELSMODEL
+		     (Default value = "Kohl")
 
-		fine_structure_ranges: dict
-			Dictionary specifying the range of fine structure for given edges.
-			Eg. {"Fe_L":(708.,730.)}
-
-		model_type: one of self.available_models
-
-		xsection_type: str
-			Wether to use "Kohl" or "Zezhong" cross section from pyEELSMODEL. "Kohl" uses the fast option.
-
+		**kwargs :
+			Passed to the specific model
+		
 		"""
 
 
@@ -147,6 +152,7 @@ class ModelG:
 
 
 	def get_background_xsections_from_pyEELS(self):
+		""" """
 
 		hl = em.MultiSpectrum.from_numpy(self.X.T[np.newaxis,...],self.energy_axis)
 
@@ -182,13 +188,8 @@ class ModelG:
 		return G0
 
 
-
-
-
-
-
-
 class Deltas(BaseModel):
+    """Model where the ELNES for each element is modelled a series of dirac deltas (thereby making it completely free)."""
 
 	def __init__(self,parent):
 		super().__init__()
@@ -230,12 +231,8 @@ class Deltas(BaseModel):
 			self.G[ii:ff,l] = 0 #cropping crossection
 
 
-
-
-
-
-
 class ConvolvedSingle(BaseModel):
+    """Model where the ELNES for each element is modelled a series of dirac deltas (thereby making it completely free)."""
 	def __init__(self,parent,low_loss_spectrum):
 		super.__init__()
 		self.parent=parent
