@@ -9,10 +9,38 @@ from .analysis import Analysis
 
 
 def load(fname):
+    """
+	Loads EELSNMF object
+
+    Parameters
+    ----------
+    fname :str or Path
+        
+
+    Returns
+    -------
+	EELSNMF Object
+    """
 	with open(fname,"rb") as f:
 		return pkl.load(f)
 
 class EELSNMF(ModelG,Decomposition,Plots,Analysis):
+    """Class to perform EELSNMF analysis of EELS core-loss data.
+
+
+		Parameters
+		----------
+
+		core_loss: hs.signals.Signal1D
+			Spectrum image to which the EELSNMF decomposition will be applied.
+
+
+		E0, alpha, beta: float
+			Acceleration voltage, convergence angle and collection angle of the acquistion.
+			If None, it is read from image metadata.
+			Units are respectively V, rad, and rad. (not kV, nor mrad)
+
+			"""
 
 	def __getstate__(self): #to avoid objects during pickling
 		state = self.__dict__.copy()
@@ -35,23 +63,7 @@ class EELSNMF(ModelG,Decomposition,Plots,Analysis):
 								beta = None,
 								):
 
-		"""
-		Class to perform EELSNMF analysis of EELS core-loss data.
-
-
-		Parameters
-		----------
-
-		core_loss: hs.signals.Signal1D
-			Spectrum image to which the EELSNMF decomposition will be applied.
-
-
-		E0, alpha, beta: float
-			Acceleration voltage, convergence angle and collection angle of the acquistion.
-			If None, it is read from image metadata.
-			Units are respectively V, rad, and rad. (not kV, mrad)
-
-		"""
+		""" """
 		super().__init__()
 
 		self.cl = core_loss
@@ -103,13 +115,34 @@ class EELSNMF(ModelG,Decomposition,Plots,Analysis):
 
 	@property
 	def G(self):
+		""" """
 		return self.model.G
 
 	@G.setter
 	def G(self, value):
+		"""
+
+		Parameters
+		----------
+		value :
+		    
+
+		Returns
+		-------
+
+		"""
 		self.model.G = value
 	
 	def change_dtype(self,dtype):
+		"""
+		Changes the dtype of the relevant matrices in the decomposition algorithm to dtype
+
+		Parameters
+		----------
+		dtype : data-type
+	
+
+		"""
 
 		for m in self._m:
 			if hasattr(self,m):
@@ -117,25 +150,27 @@ class EELSNMF(ModelG,Decomposition,Plots,Analysis):
 		return
 
 	def save(self, fname, path=None, save_hspy_objects = False,overwrite=False):
-		"""
-		Save the EELSNMF object. This method uses pickle.
-		EELSNMF objects contain some hyperspy classes (self.cl). Usually these are not necessary once the analysis has been performed,
-		since all the parameters needed from them are stored as separate attributes. Therefore saving them is not necessary and inconvenient since they can't be pickled.
+		"""Save the EELSNMF object. This method uses pickle.
 
 		Paramters:
 		----------
-
+		
 		fname: str
 			name of the file to be saved
-
+		
 		path: str
 			path where the file will be saved
-
+		
 		save_hspy_objects: bool
 			Save cl,ll objects separaterly
-
+		
 		overwrite: bool
 			Check if file exists and decide to overwrite it or not
+
+		Note:
+		EELSNMF objects contain some hyperspy classes (self.cl). Usually these are not necessary once the analysis has been performed,
+		since all the parameters needed from them are stored as separate attributes. Therefore saving them is not necessary and inconvenient since they can't be pickled.
+			
 		"""
 		if fname[-4:]==".pkl":
 			fname=fname[:-4]
