@@ -9,23 +9,23 @@ from .analysis import Analysis
 
 
 def load(fname):
-    """
+	"""
 	Loads EELSNMF object
 
-    Parameters
-    ----------
-    fname :str or Path
-        
+	Parameters
+	----------
+	fname :str or Path
+		
 
-    Returns
-    -------
+	Returns
+	-------
 	EELSNMF Object
-    """
+	"""
 	with open(fname,"rb") as f:
 		return pkl.load(f)
 
 class EELSNMF(ModelG,Decomposition,Plots,Analysis):
-    """Class to perform EELSNMF analysis of EELS core-loss data.
+	"""Class to perform EELSNMF analysis of EELS core-loss data.
 
 
 		Parameters
@@ -125,7 +125,7 @@ class EELSNMF(ModelG,Decomposition,Plots,Analysis):
 		Parameters
 		----------
 		value :
-		    
+			
 
 		Returns
 		-------

@@ -2,41 +2,41 @@ from ..imports import *
 from ..utils import moving_average, norm
 
 try:
-    from whittaker_eilers import WhittakerSmoother
+	from whittaker_eilers import WhittakerSmoother
 except ImportError:
-    raise ImportError(
-        "WhittakerSmoother is required for EML processing. "
-        "Please install it using: pip install 'EELSNMF[EML]'"
-    )
+	raise ImportError(
+		"WhittakerSmoother is required for EML processing. "
+		"Please install it using: pip install 'EELSNMF[EML]'"
+	)
 
 def we_smooth(array,lmbda=1e2,order=2):
-    """
+	"""
 	Perform Whittaker-Eilers smoothing on a 1D array
 
-    Parameters
-    ----------
-    array : array
-        
-    lmbda : float
-    	Smoothing coefficient.
-         (Default value = 1e2)
-    order : int
-    	Smoothing order
-         (Default value = 2)
+	Parameters
+	----------
+	array : array
+		
+	lmbda : float
+		Smoothing coefficient.
+		 (Default value = 1e2)
+	order : int
+		Smoothing order
+		 (Default value = 2)
 
-    Returns
-    -------
-    array
-    	The smoothed array
+	Returns
+	-------
+	array
+		The smoothed array
 
-    """
+	"""
 	whittaker_smoother = WhittakerSmoother(lmbda=lmbda, order=order, data_length = array.shape[-1])
 	smoothed_data = whittaker_smoother.smooth(array)
 	return np.array(smoothed_data)
 
 
 class EML_Processing():
-    """Class to manage the analysis of data from EML lab."""
+	"""Class to manage the analysis of data from EML lab."""
 
 	def __init__(self,sh,sl,**kwargs):
 		"""Parameters
@@ -73,10 +73,10 @@ class EML_Processing():
 		Parameters
 		----------
 		dirname : str
-		    
+			
 		metadata_average_s :
 			metadata to add to self.average_spectrum_excluding_vacuum_signal
-		     (Default value = None)
+			 (Default value = None)
 
 		Returns
 		-------
@@ -123,9 +123,9 @@ class EML_Processing():
 		Parameters
 		----------
 		si : which SI to perform it. Eg self.core_loss
-		    
+			
 		threshold : float or "auto"
-		     (Default value = "auto")
+			 (Default value = "auto")
 
 
 		"""
@@ -189,7 +189,7 @@ class EML_Processing():
 		Parameters
 		----------
 		use :{"denoised","despiked","raw"}
-		     (Default value = "denoised")
+			 (Default value = "denoised")
 
 
 		"""
@@ -285,9 +285,9 @@ class EML_Processing():
 		Parameters
 		----------
 		signal :
-		    
+			
 		mask :
-		     (Default value = None)
+			 (Default value = None)
 
 		Returns
 		-------
@@ -308,9 +308,9 @@ class EML_Processing():
 		Parameters
 		----------
 		element :
-		    
+			
 		edges :
-		    
+			
 
 		Returns
 		-------
@@ -357,41 +357,41 @@ class EML_Processing():
 		return deconvolved_edge
 
 def fom(data,n=7):
-    """
+	"""
 	Calulate figure of merit to evalute if there is a spike on a given energy channel or not.
-    Parameters
-    ----------
-    data : array
-        
-    n : int
-    	used as moving average window.
-         (Default value = 7)
+	Parameters
+	----------
+	data : array
+		
+	n : int
+		used as moving average window.
+		 (Default value = 7)
 
-    Returns
-    -------
-    array
+	Returns
+	-------
+	array
 
-    """
+	"""
 	fom = abs(np.diff(data)/moving_average(data,n)[...,:-1])
 	return fom.shape[-1]*fom/fom.sum(-1)[:,:,np.newaxis]
 
 def long_despike(process,dif_lim=0.5,count_lim=10):
-    """
-    Helper function to apply despiking iteratively.
+	"""
+	Helper function to apply despiking iteratively.
 
-    Parameters
-    ----------
-    process : EML.EML_processing
-        
-    dif_lim :float
-         (Default value = 0.5)
-    count_lim : int
-         (Default value = 10)
+	Parameters
+	----------
+	process : EML.EML_processing
+		
+	dif_lim :float
+		 (Default value = 0.5)
+	count_lim : int
+		 (Default value = 10)
 
-    Returns
-    -------
+	Returns
+	-------
 
-    """
+	"""
 	#Assumes initial despike has already been performed
 	t0=process.threshold
 	dif =np.inf
@@ -404,53 +404,53 @@ def long_despike(process,dif_lim=0.5,count_lim=10):
 		print("# Despikes : {}".format(count))
 
 def check_element(comp):
-    """
+	"""
 
-    Parameters
-    ----------
-    comp :
-        
+	Parameters
+	----------
+	comp :
+		
 
-    Returns
-    -------
+	Returns
+	-------
 
-    """
+	"""
 	if hasattr(comp,"element"):
 		return comp.element
 	else:
 		return None
 
 def check_edge(comp):
-    """
+	"""
 
-    Parameters
-    ----------
-    comp :
-        
+	Parameters
+	----------
+	comp :
+		
 
-    Returns
-    -------
+	Returns
+	-------
 
-    """
+	"""
 	if hasattr(comp,"edge"):
 		return comp.edge
 	else:
 		return None
 
 def kill_channel(signal,coord):
-    """
+	"""
 
-    Parameters
-    ----------
-    signal :
-        
-    coord :
-        
+	Parameters
+	----------
+	signal :
+		
+	coord :
+		
 
-    Returns
-    -------
+	Returns
+	-------
 
-    """
+	"""
 	x,y,e=coord
 	if e==0:
 		signal.data[x,y,e]=signal.data[x,y,e+1]
@@ -460,19 +460,19 @@ def kill_channel(signal,coord):
 		signal.data[x,y,e]=(signal.data[x,y,e-1]+signal.data[x,y,e+1])/2
 
 def kill_channel_range(signal,coord_range):
-    """
+	"""
 
-    Parameters
-    ----------
-    signal :
-        
-    coord_range :
-        
+	Parameters
+	----------
+	signal :
+		
+	coord_range :
+		
 
-    Returns
-    -------
+	Returns
+	-------
 
-    """
+	"""
 	x,y,er=coord_range
 	ei,ef=er
 	if ei==ef:
@@ -501,19 +501,19 @@ def kill_channel_range(signal,coord_range):
 	return
 
 def kill_channels_from_mask(mask,signal):
-    """
+	"""
 
-    Parameters
-    ----------
-    mask :
-        
-    signal :
-        
+	Parameters
+	----------
+	mask :
+		
+	signal :
+		
 
-    Returns
-    -------
+	Returns
+	-------
 
-    """
+	"""
 	coords = np.transpose(mask.nonzero())
 	coords = list([list (i) for i in coords])
 	coords_set = set(tuple(c) for c in coords)
@@ -555,17 +555,17 @@ def kill_channels_from_mask(mask,signal):
 
 
 def expand_mask(mask):
-    """
+	"""
 
-    Parameters
-    ----------
-    mask :
-        
+	Parameters
+	----------
+	mask :
+		
 
-    Returns
-    -------
+	Returns
+	-------
 
-    """
+	"""
 	x,y,e=mask.shape
 	mask1 = np.zeros((x,y,e+1))
 	mask1[:,:,:-1]+=mask
@@ -574,28 +574,28 @@ def expand_mask(mask):
 
 
 def load_results(folder,target_file,print_name=False,processing = None):
-    """
+	"""
 	Loads all the files named target_file in folder and corresponding subfolders.
-    Parameters
-    ----------
-    folder : str or path
-        
-    target_file : str
-        
-    print_name : bool
-         (Default value = False)
-    processing : function
-    	processing(value) is applied to all the loaded files before returning them.
-    	(Useful if some minor processing is needed to the output of load(target_file).
-    	E.g. processing = lamda x: x[-1] selects the core-loss spectrum image of dual eels "STEM SI.dm4" file)
-         (Default value = None)
+	Parameters
+	----------
+	folder : str or path
+		
+	target_file : str
+		
+	print_name : bool
+		 (Default value = False)
+	processing : function
+		processing(value) is applied to all the loaded files before returning them.
+		(Useful if some minor processing is needed to the output of load(target_file).
+		E.g. processing = lamda x: x[-1] selects the core-loss spectrum image of dual eels "STEM SI.dm4" file)
+		 (Default value = None)
 
-    Returns
-    -------
-    dict
-    	{file_path:load(file)}
+	Returns
+	-------
+	dict
+		{file_path:load(file)}
 
-    """
+	"""
 	"Assumes structure  /folder/tag1/tag2/.../tagn/n/targe_file"
 	results={}
 	extension = target_file.split(".")[-1]
@@ -640,17 +640,17 @@ def load_results(folder,target_file,print_name=False,processing = None):
 
 
 def pkl_load(file):
-    """
+	"""
 
-    Parameters
-    ----------
-    file :
-        
+	Parameters
+	----------
+	file :
+		
 
-    Returns
-    -------
+	Returns
+	-------
 
-    """
+	"""
 	with open(file,"rb") as f:
 		a = pkl.load(f)
 	return a
@@ -658,19 +658,19 @@ def pkl_load(file):
 
 
 def plot_results(results,**kwargs):
-    """
+	"""
 	Obsolete
-    Parameters
-    ----------
-    results :
-        
-    **kwargs :
-        
+	Parameters
+	----------
+	results :
+		
+	**kwargs :
+		
 
-    Returns
-    -------
+	Returns
+	-------
 
-    """
+	"""
 	"results is a dictionary with as many parameters as wanted i.e. results[material][beamcurrent][date]=[list of results]"
 	flat = unravel(results)
 
@@ -700,19 +700,19 @@ def plot_results(results,**kwargs):
 
 
 def unravel(d,tag=""):
-    """
+	"""
 
-    Parameters
-    ----------
-    d :
-        
-    tag :
-         (Default value = "")
+	Parameters
+	----------
+	d :
+		
+	tag :
+		 (Default value = "")
 
-    Returns
-    -------
+	Returns
+	-------
 
-    """
+	"""
 
 	out={}
 	for k,i in d.items():

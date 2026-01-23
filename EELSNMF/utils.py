@@ -1,35 +1,35 @@
 from .imports import *
 
 def norm(x):
-    """
+	"""
 
-    Parameters
-    ----------
-    x : array
-        
+	Parameters
+	----------
+	x : array
+		
 
-    Returns
-    -------
-    array
-    	Array normalized from 0 to 1
+	Returns
+	-------
+	array
+		Array normalized from 0 to 1
 
-    """
+	"""
 	return (x-x.min())/(x.max()-x.min())
 
 
 def find_2factors(n):
-    """
-    Parameters
-    ----------
-    n : int
-        
+	"""
+	Parameters
+	----------
+	n : int
+		
 
-    Returns
-    -------
-    tuple of ints
-    	Returns two integers (a,b) so that a*b=n
+	Returns
+	-------
+	tuple of ints
+		Returns two integers (a,b) so that a*b=n
 
-    """
+	"""
 	
 	rows = int(np.sqrt(n))+1
 	cols = n//rows
@@ -44,46 +44,46 @@ def find_2factors(n):
 	return (rows,cols)
 
 def find_index(ax,v):
-    """
+	"""
 	Finds the indices of an array that containt the element closest to a value
-    Parameters
-    ----------
-    ax : array
-    	Array where to look for a given value
-        
-    v : float
-    	Value to look for in the array
-        
+	Parameters
+	----------
+	ax : array
+		Array where to look for a given value
+		
+	v : float
+		Value to look for in the array
+		
 
-    Returns
-    -------
-    int
-    	Index of the element closest to v in ax.
+	Returns
+	-------
+	int
+		Index of the element closest to v in ax.
 
-    """
+	"""
 	if hasattr(v,"__iter__"):
 		return [abs(ax-iv).argmin() for iv in v]
 	else:
 		return abs(ax-v).argmin()
 
 def convolve(a,b):
-    """1-d convolution. the shape of a,b has to be even.
+	"""1-d convolution. the shape of a,b has to be even.
 
-    Parameters
-    ----------
-    a : np.array
-        Typically it will be a column of the unconvolved G matrix.
-    b : np.array
-        Typically it will be a single low loss spectrum
+	Parameters
+	----------
+	a : np.array
+		Typically it will be a column of the unconvolved G matrix.
+	b : np.array
+		Typically it will be a single low loss spectrum
 
-    Returns
-    -------
+	Returns
+	-------
 
-    array
-    	convolution of a with b.
+	array
+		convolution of a with b.
 
-    
-    """
+	
+	"""
 
 	assert a.shape==b.shape
 	assert a.shape[0]%2==0
@@ -102,60 +102,60 @@ def convolve(a,b):
 
 
 def moving_average(a, n=3):
-    """
+	"""
 
-    Parameters
-    ----------
-    a : array
-        
-    n : int
-         (Default value = 3)
-         Size of the moving arverage window
+	Parameters
+	----------
+	a : array
+		
+	n : int
+		 (Default value = 3)
+		 Size of the moving arverage window
 
-    Returns
-    -------
-    array
+	Returns
+	-------
+	array
 
-    """
+	"""
 	n-=(1-n%2)
 	ret = np.cumsum(a,axis=-1, dtype=float)
 	ret[...,n:] = ret[...,n:] - ret[...,:-n]
 	return np.pad(ret[...,n - 1:] / n,np.array([[0,0],[0,0],[(n-1)//2,(n-1)//2]]),mode="edge")
 
 def all_arrays_equal(array_list):
-    """
+	"""
 	Check if all arrays in array_list are equal
-    
-    Parameters
-    ----------
-    array_list : list of arrays
-        
+	
+	Parameters
+	----------
+	array_list : list of arrays
+		
 
-    Returns
-    -------
-    bool
+	Returns
+	-------
+	bool
 
-    """
+	"""
 	first_array = array_list[0]
 	return all(np.array_equal(first_array, arr) for arr in array_list[1:])
 
 def match_axis(s,new_axis):
-    """
+	"""
 
-    Parameters
-    ----------
-    s : hs.signal.Signal1D
-        
-    new_axis : array
-    	the channels of the spectra will match this new_axis.
-        
+	Parameters
+	----------
+	s : hs.signal.Signal1D
+		
+	new_axis : array
+		the channels of the spectra will match this new_axis.
+		
 
-    Returns
-    -------
-    hs.signal.Signal1D
-    	Signal with the spectral axis matching new_axis
+	Returns
+	-------
+	hs.signal.Signal1D
+		Signal with the spectral axis matching new_axis
 
-    """
+	"""
 
 	assert isinstance(s,hs.signals.BaseSignal)
 	assert isinstance(new_axis,np.ndarray)
@@ -204,20 +204,20 @@ def match_axis(s,new_axis):
 	return out
 
 class ListOfSI():
-    """ 
-    Allows processing a list of spectrum images of different sizes as one single dataset.
+	""" 
+	Allows processing a list of spectrum images of different sizes as one single dataset.
 
-    To do that, the spectra of the different spectrum images is matched to have the same "calibration" and
-    the spatial dimensions are unfolded, keeping track of the original dimensions.
+	To do that, the spectra of the different spectrum images is matched to have the same "calibration" and
+	the spatial dimensions are unfolded, keeping track of the original dimensions.
 
-    Parameters
-    ----------
-    slist : list of hs.signal.Signal1D
-        
-    enery_axis : None or array
-        Axis to which to interpolate all SIs. If None it is assumed that all SI already have the same energy axis.
-    
-    """
+	Parameters
+	----------
+	slist : list of hs.signal.Signal1D
+		
+	enery_axis : None or array
+		Axis to which to interpolate all SIs. If None it is assumed that all SI already have the same energy axis.
+	
+	"""
 	def __init__(self,slist,energy_axis=None):
 		
 		self.len = len(slist)
@@ -272,7 +272,7 @@ class ListOfSI():
 		Parameters
 		----------
 		array : array
-		    
+			
 
 		Returns
 		-------
@@ -298,12 +298,12 @@ class ListOfSI():
 		----------
 		component : int
 			Spectral component index.
-		    
+			
 		type : "decompositon" or "bss"
-		     (Default value = "decomposition")
+			 (Default value = "decomposition")
 		figure : int or str
-		     Name of the figure where the results will be plotted.
-		     (Default value = 0)
+			 Name of the figure where the results will be plotted.
+			 (Default value = 0)
 
 
 		Returns
@@ -378,18 +378,18 @@ class ListOfSI():
 		Parameters
 		----------
 		array : array
-		    
+			
 		extra_row : bool
 			Adds an extra row of panels in case extra info wants to be plotted to the figure.
-		     (Default value = False)
+			 (Default value = False)
 		vmin : float
 			Common vmin passed to plt.imshow for each panel.
-		     (Default value = None)
+			 (Default value = None)
 		vmax : float
 			Common vmin passed to plt.imshow for each panel.
-		     (Default value = None)
+			 (Default value = None)
 		cmap : Matplotlib colormap
-		     
+			 
 
 		Returns
 		-------
@@ -420,9 +420,9 @@ class ListOfSI():
 		Parameters
 		----------
 		fname : str
-		    
+			
 		overwrite : bool
-		     (Default value = False)
+			 (Default value = False)
 
 		"""
 		if os.path.exists(fname) and overwrite:
@@ -444,19 +444,19 @@ class ListOfSI():
 		return
 
 def load_ListOfSI(path):
-    """
-    Loads ListOfSI object from path
+	"""
+	Loads ListOfSI object from path
 	
-    Parameters
-    ----------
-    path : str or Path
-        
+	Parameters
+	----------
+	path : str or Path
+		
 
-    Returns
-    -------
-    ListOfSI
+	Returns
+	-------
+	ListOfSI
 
-    """
+	"""
 	si = hs.load(os.path.join(path,"SI.hspy"))
 	with open(os.path.join(path,"object.pkl"),"rb") as f:
 		out = pkl.load(f)

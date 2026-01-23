@@ -46,7 +46,7 @@ default_q_methods = {
 
 
 class Analysis:
-    """ Mixin class with chemical analysis functionalities for EELSNMF """
+	""" Mixin class with chemical analysis functionalities for EELSNMF """
 
 	def calculate_loadings(self):
 		""" """
@@ -62,10 +62,10 @@ class Analysis:
 		Parameters
 		----------
 		component_id : int
-		    
+			
 		edge : str
 			str defining the edge. E. g. "Fe_L"
-		    
+			
 
 		Returns
 		-------
@@ -88,7 +88,7 @@ class Analysis:
 		----------
 		method : str
 			see valid methods at EELSNMF.analysis.default_q_methods
-		     (Default value = None)
+			 (Default value = None)
 
 		Returns
 		-------
@@ -161,10 +161,10 @@ class Analysis:
 		----------
 		quantified : bool
 			If true, normalizes the quantification to 100% at each pixel
-		     (Default value = True)
+			 (Default value = True)
 		method : 
 			Quantification method to use. If None , falls back to methods defined in .default_q_methods
-		     (Default value = None)
+			 (Default value = None)
 
 		Returns
 		-------

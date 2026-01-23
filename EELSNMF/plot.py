@@ -3,7 +3,7 @@ from .utils import *
 
 
 class Plots:
-    """ Mixin class for all plot functionalities of EELSNMF object."""
+	""" Mixin class for all plot functionalities of EELSNMF object."""
 	def plot_factors(self):
 		"""
 		Plot EELSNMF factors spectral (mathematically the columns of G@W)
@@ -44,7 +44,7 @@ class Plots:
 		----------
 		normalize : bool
 			This flag rescales every ELNES from 0 to 1.
-		     (Default value = False)
+			 (Default value = False)
 
 		"""
 		plt.figure("Edges")
@@ -71,10 +71,10 @@ class Plots:
 		----------
 		quantified : bool
 			If true, normalize each pixel by the sum of all chemical signals on that pixel (output is % of a chemical elment at each pixel)
-		     (Default value = True)
+			 (Default value = True)
 		method : function or str
 			Perform the quantification with this method, defaults are on EELSNMF.Analysis.default_q_methods
-		     (Default value = None)
+			 (Default value = None)
 
 		"""
 		
@@ -111,7 +111,7 @@ class Plots:
 			c+=1
 			ii,ff = v
 			rect = mpl.patches.Rectangle((ii, 0.), ff-ii, 1,
-                         alpha=0.5,label=k,color=colors[c])
+						 alpha=0.5,label=k,color=colors[c])
 			ax.add_patch(rect)
 		ax.set_xlim(self.energy_axis.min(),self.energy_axis.max())
 		ax.set_ylim(0,1)
