@@ -5,10 +5,11 @@ from ._decompositions.default_kldivergence_decomposition import Default_KL
 from ._decompositions.cupy_default_kldivergence_decomposition import Cupy_Default_KL
 from ._decompositions.cupy_utils import Cupy_Utils
 from ._decompositions.alternate_bg_elnes import Alternate_BG_ELNES
+from._decompositions.frobenius_penaltyedgewise import Frobenius_PenaltyEdgeWise
 from .imports import *
 
 
-class Decomposition(Default, Cupy_Default, Default_KL, Cupy_Default_KL,Cupy_Utils,Alternate_BG_ELNES):
+class Decomposition(Default, Cupy_Default, Default_KL, Cupy_Default_KL,Cupy_Utils,Alternate_BG_ELNES,Frobenius_PenaltyEdgeWise):
 	"""Mixin class for the decomposition functionalities of the EELSNMF class """
 	_DECOMPOSITION_CHOICES = {#(model_type,use_cupy)
 		("deltas",False,"Frobenius"):"_default_decomposition",
@@ -87,8 +88,13 @@ class Decomposition(Default, Cupy_Default, Default_KL, Cupy_Default_KL,Cupy_Util
 			 (Default value = False)
 		metric : {"Frobenius","KLdivergence"}
 			Minimize the error of the model X=GWH according to this metric.
-			 (Default value = "Frobenius")
-		decomposition_method : str
+			 (Default value = "Frobenius",)
+		decomposition_method : {"_default_decomposition",
+								"_cupy_default_decomposition",
+								"_default_kl_decomposition",
+								"_cupy_default_kl_decomposition",
+								"_alternate_decomposition",
+								"_FPEW_decomposition"}
 			function to be used for decomposition, see values of self._DECOMPOSITION_CHOICES.
 			If None, it is decided according to the model and metric chosen.
 			 (Default value = None)

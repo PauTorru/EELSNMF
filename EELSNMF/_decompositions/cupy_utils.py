@@ -5,7 +5,7 @@ from ..imports import *
 class Cupy_Utils:
 
 	def _np2cp(self):
-
+		self.xp = cp
 		for attr in self._m:
 			value = getattr(self,attr,None)
 			if value is not None:
@@ -30,6 +30,7 @@ class Cupy_Utils:
 
 
 	def _cp2np(self):
+		self.xp=np
 		for attr in self._m:
 			value = getattr(self,attr,None)
 			if value is not None:
