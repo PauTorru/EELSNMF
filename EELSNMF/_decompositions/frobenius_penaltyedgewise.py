@@ -45,7 +45,7 @@ class Frobenius_PenaltyEdgeWise:
 		self._edge_indices = {}
 
 		for edge in self.edges:
-			mask = np.zeros_like(self.G[:,0],dtype="bool")
+			mask = self.xp.zeros_like(self.G[:,0],dtype="bool")
 			mask[self.model.xsection_idx[edge]]=True
 			mask[self.model._edge_slices[edge]]=True
 			self._edge_indices[edge] = self.xp.where(mask)[0]
