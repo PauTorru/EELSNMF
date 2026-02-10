@@ -3,33 +3,55 @@ from ..utils import find_index
 
 class Frobenius_EdgeTV:
 	
-	def _EdgeTV_update_W(self):
+	def _EdgeTV_update_W(self,norm="mean"):
 		HHt = self.H@self.H.T
 		WHHt = self.W@HHt
 		num = self.GtX@self.H.T 
 		denum = self.GtG@WHHt+self.eps
-		#self._normalization = num.mean()
-		denum += #self._normalization*self.FPEW_lmbda*self._FPEW_gradient()
+
+		TVgrad = self._EdgeTV_gradient()
+		TVgrad_pos = self.xp.maximum(TVgrad,0)
+		TVgrad_neg = self.xp.maximum(-TVgrad,0)
+		if norm == "mean":
+			self._norm = self.xp.mean(num)
+		elif norm == "num":
+			self._norm = num
+		elif norm == "none":
+			self._norm = 1
+		denum += self._norm*self.TV_lmbda*TVgrad_pos
+		num += self._norm*self.TV_lmbda*TVgrad_neg
 		self.W*=(num/denum)
 
+# update H is the default one 
+	
+	def _EdgeTV(self):
+
+		J = 0
+		for k,v in self._edge_indices.items():
+
+			J += self.xp.abs(self.W[v[1:],:]-self.W[v[:-1],:]).sum() # sums contributions for all components together. Strictily first should sum over axis=0 (J of edge of each component) and then over axis=1.
+
+		return J
+	
+	def _EdgeTV_gradient(self,eps=None):
+
+		if eps is None:
+			eps = self.eps
+
+		for k,v in self._edge_indices.items():
+			diffs = self.xp.diff(self.W[v,:],axis=0)
+			smooth_signs = diffs/self.xp.sqrt(diffs**2+eps)
+			self._dJdW[v[1:-1],:] = smooth_signs[:-1,:]-smooth_signs[1:,:]
+			self._dJdW[v[0],:] = -smooth_signs[0,:]
+			self._dJdW[v[-1],:] = smooth_signs[-1,:]
+
+		return self._dJdW
+
 	
 
-	def _build_S(self):
-		""" S_i are the subgroups on which the penalty will be applied """
-		self._edge_indices = {}
-
-		for edge in self.edges:
-			mask = self.xp.zeros_like(self.G[:,0],dtype="bool")
-			mask[self.model.xsection_idx[edge]]=True
-			mask[self.model._edge_slices[edge]]=True
-			self._edge_indices[edge] = self.xp.where(mask)[0]
-
-		return
-	
-
-	def _FPEW_decomposition(self,lmbda=0.1):
+	def _EdgeTV_decomposition(self,lmbda=0.1,norm="mean"):
 		
-		self.FPEW_lmbda = lmbda
+		self.TV_lmbda = lmbda
 		self.get_model = self._default_get_model
 		self._default_init_WH()
 		self._build_S()
@@ -47,25 +69,34 @@ class Frobenius_EdgeTV:
 		if not "GtX" in self._m:
 			self._m+=["GtX"]
 
+		self._dJdW = np.zeros_like(self.W)
+		self._m+=["_dJdW"]
+
 		if self.analysis_description["decomposition"]["use_cupy"]:
 			self._np2cp()
 
 		num = self.GtX@self.H.T 
-		#self._normalization = num.mean()
-		error_0 = float(self.xp.linalg.norm(self.X-self.G@self.W@self.H)+self._normalization*self.FPEW_lmbda*self._FPEW())
+		if norm == "mean":
+			self._norm = self.xp.mean(num)
+		elif norm == "num":
+			self._norm = num
+		elif norm == "none":
+			self._norm = 1
+
+		error_0 = float(self.xp.linalg.norm(self.X-self.G@self.W@self.H)+self._norm*self.TV_lmbda*self._EdgeTV())
 		self.error_log=[error_0]
 
 		with tqdm(range(self.max_iters),mininterval=5) as pbar:
 			for i in pbar:
 
-				self._FPEW_update_W()
+				self._EdgeTV_update_W(norm=norm)
 
 				self.apply_fix_W()
 
-				self._FPEW_update_H()
+				self._default_update_H()
 				
 				if i%self.error_skip_step==0:
-					error = float(self.xp.linalg.norm(self.X-self.G@self.W@self.H)+self._normalization*self.FPEW_lmbda*self._FPEW())
+					error = float(self.xp.linalg.norm(self.X-self.G@self.W@self.H)+self._norm*self.TV_lmbda*self._EdgeTV())
 					self.error_log.append(error)
 					rel_change=float(self.xp.abs((error_0-error)/error_0))
 
@@ -81,10 +112,12 @@ class Frobenius_EdgeTV:
 				#shifts to prevent 0 locking
 				self.W = self.xp.maximum(self.W, self.eps)
 				self.H = self.xp.maximum(self.H, self.eps)
-				self.W2=self.W**2
 
-		for attr in ["GtG","GtX","WS_reciprocal_sum","W2"]:
+		for attr in ["GtG","GtX","_dJdW"]:
 			if hasattr(self,attr):
 				delattr(self,attr)
+			if i in self._m:
+				self._m.remove(attr)
+
 		if self.analysis_description["decomposition"]["use_cupy"]:
 			self._cp2np()

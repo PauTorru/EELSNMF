@@ -24,10 +24,18 @@ class Default:
 			self.GtX = self.G.T@self.X
 			self.GtG = self.G.T@self.G
 
+		if not "GtG" in self._m:
+			self._m+=["GtG"]
+		if not "GtX" in self._m:
+			self._m+=["GtX"]
+
 		self.enforce_dtype()
 
-		error_0 = abs(self.X-self.G@self.W@self.H).sum()
-		self.error_log=[error_0]
+		if self.analysis_description["decomposition"]["use_cupy"]:
+			self._np2cp()
+
+		error_0 = self.xp.abs(self.X-self.G@self.W@self.H).sum()
+		self.error_log=[float(error_0)]
 
 		with tqdm(range(self.max_iters),mininterval=5) as pbar:
 			for i in pbar:
@@ -39,9 +47,9 @@ class Default:
 				self._default_update_H()
 				
 				if i%self.error_skip_step==0:
-					error = abs(self.X-self.G@self.W@self.H).sum()
-					self.error_log.append(error)
-					rel_change=abs((error_0-error)/error_0)
+					error = self.xp.abs(self.X-self.G@self.W@self.H).sum()
+					self.error_log.append(float(error))
+					rel_change=self.xp.abs((error_0-error)/error_0)
 
 					if rel_change<=self.tol and i>2:
 						print("Converged after {} iterations".format(i))
@@ -52,8 +60,15 @@ class Default:
 
 					
 				#shifts to prevent 0 locking
-				self.W = np.maximum(self.W, self.eps)
-				self.H = np.maximum(self.H, self.eps)
+				self.W = self.xp.maximum(self.W, self.eps)
+				self.H = self.xp.maximum(self.H, self.eps)
+
+
+		for attr in ["GtG","GtX"]:
+				if hasattr(self,attr):
+					delattr(self,attr)
+			if self.analysis_description["decomposition"]["use_cupy"]:
+				self._cp2np()
 
 
 	

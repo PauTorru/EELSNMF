@@ -7,14 +7,22 @@ from ._decompositions.cupy_utils import Cupy_Utils
 from ._decompositions.alternate_bg_elnes import Alternate_BG_ELNES
 from._decompositions.frobenius_penaltyedgewise import Frobenius_PenaltyEdgeWise
 from._decompositions.frobenius_edgetv import Frobenius_EdgeTV
+from._decompositions.edgewise_utils import EdgeWiseUtils
 from .imports import *
 
 
-class Decomposition(Default, Cupy_Default, Default_KL, Cupy_Default_KL,Cupy_Utils,Alternate_BG_ELNES,Frobenius_PenaltyEdgeWise,Frobenius_EdgeTV):
+class Decomposition(Default,
+					Default_KL,
+					Cupy_Default_KL,
+					Cupy_Utils,
+					Alternate_BG_ELNES,
+					Frobenius_PenaltyEdgeWis,
+					Frobenius_EdgeTV,
+					EdgeWiseUtils):
 	"""Mixin class for the decomposition functionalities of the EELSNMF class """
 	_DECOMPOSITION_CHOICES = {#(model_type,use_cupy)
 		("deltas",False,"Frobenius"):"_default_decomposition",
-		("deltas",True,"Frobenius"):"_cupy_default_decomposition",
+		("deltas",True,"Frobenius"):"_default_decomposition",#"_cupy_default_decomposition", now default handles cp/np change
 		("convolved_single",False,"Frobenius"):"_default_decomposition",
 		("convolved_single",True,"Frobenius"):"_cupy_default_decomposition",
 		("deltas",False,"KLdivergence"):"_default_kl_decomposition",
