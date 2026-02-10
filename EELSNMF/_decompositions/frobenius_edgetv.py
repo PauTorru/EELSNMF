@@ -1,9 +1,9 @@
 from ..imports import *
 from ..utils import find_index
 
-class Frobenius_PenaltyEdgeWise:
+class Frobenius_EdgeTV:
 	
-	def _FPEW_update_W(self):
+	def _EdgeTV_update_W(self):
 		HHt = self.H@self.H.T
 		WHHt = self.W@HHt
 		num = self.GtX@self.H.T 
@@ -12,33 +12,7 @@ class Frobenius_PenaltyEdgeWise:
 		denum += #self._normalization*self.FPEW_lmbda*self._FPEW_gradient()
 		self.W*=(num/denum)
 
-	def _FPEW_update_H(self):
-		WH = self.W@self.H # full update
-		num = self.W.T@self.GtX
-		denum = self.W.T@self.GtG@WH+self.eps
-		self.H*=num/denum
-
-"""	def _FPEW(self):
-
-		if not hasattr(self,"_edge_indices"):
-			self._build_S()
-
-		out = 0
-		for edge,v in self._edge_indices.items():
-			out += self.xp.linalg.norm(self.W[v,:],axis=0).sum()
-
-		return out
-
-	def _FPEW_gradient(self):
-
-		self.WS_reciprocal_sum[:]=0
-
-		for edge,v in self._edge_indices.items():
-			self.WS_reciprocal_sum[v,:] +=  1/self.xp.sqrt((self.W2[v,:]).sum(0)+self.eps) # += 1/(np.linalg.norm(self.W[v,:].axis=0)[None,:]+self.eps) not sure what expression is better
-
-		return self.W*self.WS_reciprocal_sum
-"""
-
+	
 
 	def _build_S(self):
 		""" S_i are the subgroups on which the penalty will be applied """

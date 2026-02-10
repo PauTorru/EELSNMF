@@ -6,10 +6,11 @@ from ._decompositions.cupy_default_kldivergence_decomposition import Cupy_Defaul
 from ._decompositions.cupy_utils import Cupy_Utils
 from ._decompositions.alternate_bg_elnes import Alternate_BG_ELNES
 from._decompositions.frobenius_penaltyedgewise import Frobenius_PenaltyEdgeWise
+from._decompositions.frobenius_edgetv import Frobenius_EdgeTV
 from .imports import *
 
 
-class Decomposition(Default, Cupy_Default, Default_KL, Cupy_Default_KL,Cupy_Utils,Alternate_BG_ELNES,Frobenius_PenaltyEdgeWise):
+class Decomposition(Default, Cupy_Default, Default_KL, Cupy_Default_KL,Cupy_Utils,Alternate_BG_ELNES,Frobenius_PenaltyEdgeWise,Frobenius_EdgeTV):
 	"""Mixin class for the decomposition functionalities of the EELSNMF class """
 	_DECOMPOSITION_CHOICES = {#(model_type,use_cupy)
 		("deltas",False,"Frobenius"):"_default_decomposition",
