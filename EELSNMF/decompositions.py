@@ -1,6 +1,5 @@
 
 from ._decompositions.default_decomposition import Default
-from ._decompositions.cupy_default_decomposition import Cupy_Default
 from ._decompositions.default_kldivergence_decomposition import Default_KL
 from ._decompositions.cupy_default_kldivergence_decomposition import Cupy_Default_KL
 from ._decompositions.cupy_utils import Cupy_Utils
@@ -16,7 +15,7 @@ class Decomposition(Default,
 					Cupy_Default_KL,
 					Cupy_Utils,
 					Alternate_BG_ELNES,
-					Frobenius_PenaltyEdgeWis,
+					Frobenius_PenaltyEdgeWise,
 					Frobenius_EdgeTV,
 					EdgeWiseUtils):
 	"""Mixin class for the decomposition functionalities of the EELSNMF class """
