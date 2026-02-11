@@ -12,7 +12,7 @@ class EdgeWiseUtils:
 				mask = np.zeros_like(self.G[:,0],dtype="bool")
 				#mask[self.model.xsection_idx[edge]]=True
 				mask[self.model._edge_slices[edge]]=True
-				#self._edge_indices[edge] = np.roll(np.where(mask)[0],-1) #moves xsection to the end for TV
+				self._edge_indices[edge] =np.where(mask)[0]# np.roll(np.where(mask)[0],-1) #moves xsection to the end for TV
 
 			return
 
