@@ -17,7 +17,7 @@ class Frobenius_EdgeTV:
 		elif norm == "num":
 			self._norm = num
 		elif norm == "none":
-			self._norm = 1
+			self._norm = self.xp.array(1.)
 		denum += self._norm*self.TV_lmbda*TVgrad_pos
 		num += self._norm*self.TV_lmbda*TVgrad_neg
 		self.W*=(num/denum)
@@ -82,7 +82,7 @@ class Frobenius_EdgeTV:
 		elif norm == "num":
 			self._norm = num
 		elif norm == "none":
-			self._norm = 1
+			self._norm = self.xp.array(1.)
 
 		error_0 = float(self.xp.linalg.norm(self.X-self.G@self.W@self.H)+self.TV_lmbda*self._EdgeTV())
 		self.error_log=[error_0]
