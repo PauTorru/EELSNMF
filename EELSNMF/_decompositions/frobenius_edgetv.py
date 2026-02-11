@@ -33,17 +33,17 @@ class Frobenius_EdgeTV:
 
 		return J
 	
-	def _EdgeTV_gradient(self,eps=None):
-
-		if eps is None:
-			eps = self.eps
+	def _EdgeTV_gradient(self):
 
 		for k,v in self._edge_indices.items():
 			diffs = self.xp.diff(self.W[v,:],axis=0)
-			smooth_signs = diffs/self.xp.sqrt(diffs**2+eps)
-			self._dJdW[v[1:-1],:] = smooth_signs[:-1,:]-smooth_signs[1:,:]
-			self._dJdW[v[0],:] = -smooth_signs[0,:]
-			self._dJdW[v[-1],:] = smooth_signs[-1,:]
+			#smooth_signs = diffs/self.xp.sqrt(diffs**2+eps)  for L1 TV 
+			#self._dJdW[v[1:-1],:] = smooth_signs[:-1,:]-smooth_signs[1:,:]
+			#self._dJdW[v[0],:] = -smooth_signs[0,:]
+			#self._dJdW[v[-1],:] = smooth_signs[-1,:]
+			self._dJdW[v[1:-1],:] = diffs[:-1,:]-diffs[1:,:] # for L2 TV
+			self._dJdW[v[0],:] = -diffs[0,:]
+			self._dJdW[v[-1],:] = diffs[-1,:]
 
 		return self._dJdW
 
@@ -59,6 +59,7 @@ class Frobenius_EdgeTV:
 		#self.WS_reciprocal_sum=np.zeros_like(self.W)
 		#self.W2 = self.W**2
 		#self._m += ["WS_reciprocal_sum","W2"]
+		self._rescale_xsections_to1()
 		
 		if not hasattr(self,"GtX") or not hasattr(self,"GtG"): # in case of full deconvolution they are already created
 			self.GtG = self.G.T@self.G
@@ -83,7 +84,7 @@ class Frobenius_EdgeTV:
 		elif norm == "none":
 			self._norm = 1
 
-		error_0 = float(self.xp.linalg.norm(self.X-self.G@self.W@self.H)+self._norm*self.TV_lmbda*self._EdgeTV())
+		error_0 = float(self.xp.linalg.norm(self.X-self.G@self.W@self.H)+self.TV_lmbda*self._EdgeTV())
 		self.error_log=[error_0]
 
 		with tqdm(range(self.max_iters),mininterval=5) as pbar:
@@ -96,13 +97,14 @@ class Frobenius_EdgeTV:
 				self._default_update_H()
 				
 				if i%self.error_skip_step==0:
-					error = float(self.xp.linalg.norm(self.X-self.G@self.W@self.H)+self._norm*self.TV_lmbda*self._EdgeTV())
+					error = float(self.xp.linalg.norm(self.X-self.G@self.W@self.H)+self.xp.linalg.norm(self._norm)*self.TV_lmbda*self._EdgeTV())
 					self.error_log.append(error)
 					rel_change=float(self.xp.abs((error_0-error)/error_0))
 
 					if rel_change<=self.tol and i>2:
 						print("Converged after {} iterations".format(i))
-						self._cp2np()
+						if self.analysis_description["decomposition"]["use_cupy"]:
+							self._cp2np()
 						return
 					
 					pbar.set_postfix({"error":error,"relative change":rel_change})
@@ -118,6 +120,8 @@ class Frobenius_EdgeTV:
 				delattr(self,attr)
 			if i in self._m:
 				self._m.remove(attr)
+
+		self._undo_rescale_xsections_to1()
 
 		if self.analysis_description["decomposition"]["use_cupy"]:
 			self._cp2np()
