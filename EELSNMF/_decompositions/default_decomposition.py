@@ -65,10 +65,10 @@ class Default:
 
 
 		for attr in ["GtG","GtX"]:
-				if hasattr(self,attr):
-					delattr(self,attr)
-			if self.analysis_description["decomposition"]["use_cupy"]:
-				self._cp2np()
+			if hasattr(self,attr):
+				delattr(self,attr)
+		if self.analysis_description["decomposition"]["use_cupy"]:
+			self._cp2np()
 
 
 	
