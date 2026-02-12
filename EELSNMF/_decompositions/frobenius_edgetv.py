@@ -118,7 +118,7 @@ class Frobenius_EdgeTV:
 		for attr in ["GtG","GtX","_dJdW"]:
 			if hasattr(self,attr):
 				delattr(self,attr)
-			if i in self._m:
+			if attr in self._m:
 				self._m.remove(attr)
 
 		self.model._undo_rescale_xsections_to1()
