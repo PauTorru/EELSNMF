@@ -20,7 +20,18 @@ class Cupy_Default_KL:
 		self.H*=num/denum
 
 
-	def _cupy_default_kl_decomposition(self):
+	def _cupy_default_kl_decomposition(self,rescale_WH = False,KL_rescaling_per_iter = False):
+		"""
+		rescale_WH : bool
+			Only used for metric="KLdivergence"
+			Rescales columns of W to one.
+			 (Default value = False)
+
+		 KL_rescaling_per_iter :
+			Only used for metric="KLdivergence". Rescales the model to accurately capture absolute intensity at each iteration.
+			 (Default value = False)
+
+			 """
 		
 		self.get_model = self._default_get_model
 		self._default_init_WH()
@@ -63,13 +74,13 @@ class Cupy_Default_KL:
 				self.W = cp.maximum(self.W, self.eps)
 				self.H = cp.maximum(self.H, self.eps)
 
-				if self.rescale_WH:
+				if rescale_WH:
 					scale = self.W.sum(0,keepdims=True)
 					scale = cp.maximum(scale, self.eps)
 					self.W /= scale
 					self.H *= scale.T
 
-				if self.KL_rescaling_per_iter:
+				if KL_rescaling_per_iter:
 					self.KL_rescaling()
 
 		self._cp2np()

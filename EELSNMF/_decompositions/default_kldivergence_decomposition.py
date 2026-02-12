@@ -5,10 +5,10 @@ class Default_KL:
 
 	def _default_kl_update_W(self):
 		self.GW = self.G@self.W
-		np.divide(self.X,(self.GW@self.H+self.eps),out=self.X_over_GWH)
+		self.xp.divide(self.X,(self.GW@self.H+self.eps),out=self.X_over_GWH)
 		temp = self.X_over_GWH@self.H.T
 		num = self.G.T@temp
-		denum = self.GTsum1[:,np.newaxis]@self.H.T.sum(0)[np.newaxis,:]+self.eps
+		denum = self.GTsum1[:,None]@self.H.T.sum(0)[None,:]+self.eps
 		self.W*=num/denum
 		
 
@@ -16,20 +16,34 @@ class Default_KL:
 
 		#self.X_over_GWH = self.X/(self.G@self.W@self.H+self.eps)
 		num = self.GW.T@self.X_over_GWH
-		denum = (self.GW.T).sum(1)[:,np.newaxis]+self.eps
+		denum = (self.GW.T).sum(1)[:,None]+self.eps
 		self.H*=num/denum
 
 
-	def _default_kl_decomposition(self):
+	def _default_kl_decomposition(self,rescale_WH = False, KL_rescaling_per_iter = False):
+		"""
+			rescale_WH : bool
+				Only used for metric="KLdivergence"
+				Rescales columns of W to one.
+				 (Default value = False)
+			KL_rescaling_per_iter :
+				Only used for metric="KLdivergence". Rescales the model to accurately capture absolute intensity at each iteration.
+				 (Default value = False)
+				 """
 		
 		self.get_model = self._default_get_model
 		self._default_init_WH()
 		self.KL_rescaling()
 		self.GTsum1=self.G.T.sum(1)
+		if not "GTsum1" in self._m
+			self._m.append(["GTsum1"])
 		if not hasattr(self, "X_over_GWH"):
-			self.X_over_GWH = np.empty_like(self.X)
+			self.X_over_GWH = self.xp.empty_like(self.X)
+			self._m.append("X_over_GWH")
 		
 		self.enforce_dtype()
+		if self.analysis_description["decomposition"]["use_cupy"]:
+			self._np2cp()
 
 		error_0 = self.KL_divergence_error()
 		self.error_log=[error_0]
@@ -46,7 +60,7 @@ class Default_KL:
 				if i%self.error_skip_step==0:
 					error = self.KL_divergence_error()
 					self.error_log.append(error)
-					rel_change=abs((error_0-error)/error_0)
+					rel_change=self.xp.abs((error_0-error)/error_0)
 
 					if rel_change<=self.tol and i>2:
 						print("Converged after {} iterations".format(i))
@@ -57,24 +71,33 @@ class Default_KL:
 
 					
 				#shifts to prevent 0 locking
-				self.W = np.maximum(self.W, self.eps)
-				self.H = np.maximum(self.H, self.eps)
+				self.W = self.xp.maximum(self.W, self.eps)
+				self.H = self.xp.maximum(self.H, self.eps)
 
-				if self.rescale_WH:
+				if rescale_WH:
 					scale = self.W.sum(0,keepdims=True)
-					scale = np.maximum(scale, self.eps)
+					scale = self.xp.maximum(scale, self.eps)
 					self.W /= scale
 					self.H *= scale.T
 
-				if self.KL_rescaling_per_iter:
+				if KL_rescaling_per_iter:
 					self.KL_rescaling()
+
+		if self.analysis_description["decomposition"]["use_cupy"]:
+			self._cp2np()
+
+		for attr in ["GtG","GtX","X_over_GWH","GTsum1"]:
+			if hasattr(self,attr):
+				delattr(self,attr)
+			if attr in self._m:
+				self._m.remove(attr)
 
 	def KL_divergence_error(self):
 		if hasattr(self,"GW"): #not the actual error (H is updated after computing self.GW) but faster to compute
-			return (self.X * np.log((self.X + self.eps)/(self.GW@self.H + self.eps))
+			return (self.X * self.xp.log((self.X + self.eps)/(self.GW@self.H + self.eps))
 				- self.X + self.GW@self.H).sum()
 		else:
-			return (self.X * np.log((self.X + self.eps)/(self.G@self.W@self.H + self.eps))
+			return (self.X * self.xp.log((self.X + self.eps)/(self.G@self.W@self.H + self.eps))
 				- self.X + self.G@self.W@self.H).sum()
 
 	def KL_rescaling(self):

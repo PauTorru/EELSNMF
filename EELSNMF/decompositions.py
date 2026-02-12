@@ -42,8 +42,6 @@ class Decomposition(Default,
 								H_init = None,
 								error_skip_step=10,
 								eps=1e-10,
-								rescale_WH=False,
-								KL_rescaling_per_iter = False,
 								metric = "Frobenius",
 								decomposition_method = None,
 								rescale_G = True,
@@ -88,18 +86,10 @@ class Decomposition(Default,
 		eps : float
 			value added to protect agains divisions by 0
 			 (Default value = 1e-10)
-		rescale_WH : bool
-			Only used for metric="KLdivergence"
-			Rescales columns of W to one.
-			 (Default value = False)
-		KL_rescaling_per_iter :
-			Only used for metric="KLdivergence". Rescales the model to accurately capture absolute intensity at each iteration.
-			 (Default value = False)
 		metric : {"Frobenius","KLdivergence"}
 			Minimize the error of the model X=GWH according to this metric.
 			 (Default value = "Frobenius",)
 		decomposition_method : {"_default_decomposition",
-								"_cupy_default_decomposition",
 								"_default_kl_decomposition",
 								"_cupy_default_kl_decomposition",
 								"_alternate_decomposition",
@@ -121,9 +111,7 @@ class Decomposition(Default,
 		self.error_skip_step = error_skip_step
 		self.init_nmf=init_nmf
 		self.eps=eps
-		self.rescale_WH = rescale_WH # method specific: needs to be absorbed to kwargs
 		self.metric=metric
-		self.KL_rescaling_per_iter = KL_rescaling_per_iter # method specific: needs to be absorbed to kwargs
 		self.rescale_G = rescale_G
 
 
