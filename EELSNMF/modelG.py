@@ -67,10 +67,10 @@ class BaseModel:
 		return
 
 	def _undo_rescale(self):
-
-		self.G[:,:] *= self._scales[None,:]
-		self.W[:,:] /= self._scales[:,None]
 		"""Undo scaling after decomposition"""
+		self.G[:,:] *= self._scales[None,:]
+		self.parent.W[:,:] /= self._scales[:,None]
+		
 
 		#for edge in self.parent.edges:
 			
