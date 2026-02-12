@@ -16,28 +16,3 @@ class EdgeWiseUtils:
 
 			return
 
-	def _rescale_xsections_to1(self):
-		"""Needed to enforce smoothness between fine structure and xsections, applied before decomposition"""
-		self._edge_scales = {}
-
-		for edge in self.edges:
-			
-			idx = self.model.xsection_idx[edge]			
-			self._edge_scales[edge] = self.G[(self.G[:,idx]>0).argmax(),idx] #first nonzero
-			self.G[:,idx]/=self._edge_scales[edge]
-
-		return
-
-	def _undo_rescale_xsections_to1(self):
-		"""Undo scaling after decomposition"""
-
-		for edge in self.edges:
-			
-			idx = self.model.xsection_idx[edge]			
-			
-			self.G[:,idx]*=self._edge_scales[edge]
-			self.W[idx,:]/=self._edge_scales[edge]
-
-		return
-
-

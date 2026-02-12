@@ -52,32 +52,35 @@ class BaseModel:
 		self.__dict__.update(state)
 
 
-	def _rescale_xsections_to1(self):
+	def _rescale(self):
 		"""Needed to enforce smoothness between fine structure and xsections, applied before decomposition"""
-		self._edge_scales = {}
-
-		for edge in self.parent.edges:
+		self._scales = self.G.sum(0)
+		self.G[:,:] /= self._scales[None,:]
+		#for edge in self.parent.edges:
 			
-			idx = self.xsection_idx[edge]			
-			self._edge_scales[edge] = self.G[(self.G[:,idx]>0).argmax(),idx] #first nonzero
-			self.G[:,idx]/=self._edge_scales[edge]
+		#	idx = self.xsection_idx[edge]			
+		#	self._edge_scales[edge] = self.G[(self.G[:,idx]>0).argmax(),idx] #first nonzero
+		#	self.G[:,idx]/=self._edge_scales[edge]
 
-		self._G_rescaled_to1 = True
+		#self._G_rescaled_to1 = True
 
 		return
 
-	def _undo_rescale_xsections_to1(self):
+	def _undo_rescale(self):
+
+		self.G[:,:] *= self._scales[None,;]
+		self.W[:,:] /= self._scales[:,None]
 		"""Undo scaling after decomposition"""
 
-		for edge in self.parent.edges:
+		#for edge in self.parent.edges:
 			
-			idx = self.xsection_idx[edge]			
+		#	idx = self.xsection_idx[edge]			
 			
-			self.G[:,idx]*=self._edge_scales[edge]
-			if hasattr(self.parent,"W"):
-				self.parent.W[idx,:]/=self._edge_scales[edge]
+		#	self.G[:,idx]*=self._edge_scales[edge]
+		#	if hasattr(self.parent,"W"):
+		#		self.parent.W[idx,:]/=self._edge_scales[edge]
 
-		self._G_rescaled_to1 = False
+		#self._G_rescaled_to1 = False
 
 		return
 

@@ -46,6 +46,7 @@ class Decomposition(Default,
 								KL_rescaling_per_iter = False,
 								metric = "Frobenius",
 								decomposition_method = None,
+								rescale_G = True,
 								**kwargs):
 		"""
 
@@ -78,7 +79,7 @@ class Decomposition(Default,
 		W_fixed_values : array
 			self.W[W_fixed_bool]=W_fixed_values
 			 (Default value = None)
-		H_init :
+		H_init : array
 			Initial H.
 			 (Default value = None)
 		error_skip_step : int
@@ -106,6 +107,8 @@ class Decomposition(Default,
 			function to be used for decomposition, see values of self._DECOMPOSITION_CHOICES.
 			If None, it is decided according to the model and metric chosen.
 			 (Default value = None)
+		rescale_G: bool
+			Rescales the sum of the columns of G to one. This allows coefficents of W to have the same scale and converge simultaneously.
 		**kwargs : passed to decomposition_method
 
 
@@ -118,9 +121,10 @@ class Decomposition(Default,
 		self.error_skip_step = error_skip_step
 		self.init_nmf=init_nmf
 		self.eps=eps
-		self.rescale_WH = rescale_WH
+		self.rescale_WH = rescale_WH # method specific: needs to be absorbed to kwargs
 		self.metric=metric
-		self.KL_rescaling_per_iter = KL_rescaling_per_iter
+		self.KL_rescaling_per_iter = KL_rescaling_per_iter # method specific: needs to be absorbed to kwargs
+		self.rescale_G = rescale_G
 
 
 		self.analysis_description["decomposition"]={}
@@ -152,8 +156,16 @@ class Decomposition(Default,
 			decomposition_method = self._DECOMPOSITION_CHOICES[(self.analysis_description["model_type"],self.analysis_description["decomposition"]["use_cupy"],self.analysis_description["decomposition"]["metric"])]
 		
 		self.analysis_description["decomposition"]["method"]=decomposition_method
+
+		if self.rescale_G:
+			self.model._rescale()
+
+
 		method = getattr(self,decomposition_method)
 		method(**kwargs)
+
+		if self.rescale_G:
+			self.model._undo_rescale()
 		
 		#clear memory
 		for attr in ["GtX","GtG","GW","X_over_GWH","GTsum1"]:

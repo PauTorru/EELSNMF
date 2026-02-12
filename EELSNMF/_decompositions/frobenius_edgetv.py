@@ -59,7 +59,6 @@ class Frobenius_EdgeTV:
 		#self.WS_reciprocal_sum=np.zeros_like(self.W)
 		#self.W2 = self.W**2
 		#self._m += ["WS_reciprocal_sum","W2"]
-		self.model._rescale_xsections_to1()
 		
 		if not hasattr(self,"GtX") or not hasattr(self,"GtG"): # in case of full deconvolution they are already created
 			self.GtG = self.G.T@self.G
@@ -121,7 +120,6 @@ class Frobenius_EdgeTV:
 			if attr in self._m:
 				self._m.remove(attr)
 
-		self.model._undo_rescale_xsections_to1()
 
 		if self.analysis_description["decomposition"]["use_cupy"]:
 			self._cp2np()
