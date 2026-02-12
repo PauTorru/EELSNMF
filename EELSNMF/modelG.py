@@ -53,7 +53,7 @@ class BaseModel:
 
 
 	def _rescale_xsections_to1(self):
-	"""Needed to enforce smoothness between fine structure and xsections, applied before decomposition"""
+		"""Needed to enforce smoothness between fine structure and xsections, applied before decomposition"""
 		self._edge_scales = {}
 
 		for edge in self.parent.edges:
