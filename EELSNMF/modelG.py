@@ -40,6 +40,7 @@ def convolve(a,b):
 class BaseModel:
 	""" """
 	def __init__(self):
+		self._G_rescaled_to1 = False
 		pass
 
 	def __getstate__(self):
@@ -49,6 +50,39 @@ class BaseModel:
 
 	def __setstate__(self, state):
 		self.__dict__.update(state)
+
+
+	def _rescale_xsections_to1(self):
+	"""Needed to enforce smoothness between fine structure and xsections, applied before decomposition"""
+		self._edge_scales = {}
+
+		for edge in self.parent.edges:
+			
+			idx = self.xsection_idx[edge]			
+			self._edge_scales[edge] = self.G[(self.G[:,idx]>0).argmax(),idx] #first nonzero
+			self.G[:,idx]/=self._edge_scales[edge]
+
+		self._G_rescaled_to1 = True
+
+		return
+
+	def _undo_rescale_xsections_to1(self):
+		"""Undo scaling after decomposition"""
+
+		for edge in self.parent.edges:
+			
+			idx = self.xsection_idx[edge]			
+			
+			self.G[:,idx]*=self._edge_scales[edge]
+			if hasattr(self.parent,"W"):
+				self.parent.W[idx,:]/=self._edge_scales[edge]
+
+		self._G_rescaled_to1 = False
+
+		return
+
+
+
 
 	#@property
 	#def G(self):
