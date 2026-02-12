@@ -15,7 +15,7 @@ class Frobenius_EdgeTV:
 		if norm == "mean":
 			self._norm = self.xp.mean(num)
 		elif norm == "num":
-			self._norm = num
+			self.create_temp_array("_norm", num)
 		elif norm == "none":
 			self._norm = self.xp.array(1.)
 		denum += self._norm*self.TV_lmbda*TVgrad_pos
@@ -60,17 +60,12 @@ class Frobenius_EdgeTV:
 		#self.W2 = self.W**2
 		#self._m += ["WS_reciprocal_sum","W2"]
 		
-		if not hasattr(self,"GtX") or not hasattr(self,"GtG"): # in case of full deconvolution they are already created
-			self.GtG = self.G.T@self.G
-			self.GtX = self.G.T@self.X
 		
-		if not "GtG" in self._m:
-			self._m+=["GtG"]
-		if not "GtX" in self._m:
-			self._m+=["GtX"]
 
-		self._dJdW = np.zeros_like(self.W)
-		self._m+=["_dJdW"]
+		self.create_temp_array("GtX",self.G.T@self.X)
+		self.create_temp_array("GtG",self.G.T@self.G)
+		self.create_temp_array("_dJdW", np.zeros_like(self.W))
+		
 
 		if self.analysis_description["decomposition"]["use_cupy"]:
 			self._np2cp()
@@ -79,7 +74,7 @@ class Frobenius_EdgeTV:
 		if norm == "mean":
 			self._norm = self.xp.mean(num)
 		elif norm == "num":
-			self._norm = num
+			self.create_temp_array("_norm", num)
 		elif norm == "none":
 			self._norm = self.xp.array(1.)
 
@@ -114,11 +109,7 @@ class Frobenius_EdgeTV:
 				self.W = self.xp.maximum(self.W, self.eps)
 				self.H = self.xp.maximum(self.H, self.eps)
 
-		for attr in ["GtG","GtX","_dJdW"]:
-			if hasattr(self,attr):
-				delattr(self,attr)
-			if attr in self._m:
-				self._m.remove(attr)
+		self.delete_temp_arrays()
 
 
 		if self.analysis_description["decomposition"]["use_cupy"]:

@@ -41,7 +41,7 @@ class Frobenius_PenaltyEdgeWise:
 
 
 	def _FPEW_decomposition(self,lmbda=0.1):
-		
+		return "This Method is no longer valid"
 		self.FPEW_lmbda = lmbda
 		self.get_model = self._default_get_model
 		self._default_init_WH()
@@ -51,19 +51,13 @@ class Frobenius_PenaltyEdgeWise:
 		#self.W2 = self.W**2
 		#self._m += ["WS_reciprocal_sum","W2"]
 		
-		if not hasattr(self,"GtX") or not hasattr(self,"GtG"): # in case of full deconvolution they are already created
-			self.GtG = self.G.T@self.G
-			self.GtX = self.G.T@self.X
-		
-		if not "GtG" in self._m:
-			self._m+=["GtG"]
-		if not "GtX" in self._m:
-			self._m+=["GtX"]
+		self.create_temp_array("GtX",self.G.T@self.X)
+		self.create_temp_array("GtG",self.G.T@self.G)
 
 		if self.analysis_description["decomposition"]["use_cupy"]:
 			self._np2cp()
 
-		num = self.GtX@self.H.T 
+		#num = self.GtX@self.H.T 
 		#self._normalization = num.mean()
 		error_0 = float(self.xp.linalg.norm(self.X-self.G@self.W@self.H)+self._normalization*self.FPEW_lmbda*self._FPEW())
 		self.error_log=[error_0]

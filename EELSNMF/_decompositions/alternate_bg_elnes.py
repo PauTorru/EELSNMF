@@ -42,13 +42,12 @@ class Alternate_BG_ELNES:
 		
 		
 		#if not hasattr(self,"GtX") and not hasattr(self,"GtG"): # in case of full deconvolution they are already created
-		self.GtG = self.G.T@self.G
-		self.GtX = self.G.T@self.X
-		self.GtX_bg = self.G[energy_mask_bg,idxs_bg].T@self.X[energy_mask_bg,:] #####need to optimize to not use masks?????
-		self.GtG_bg = self.G[energy_mask_bg,idxs_bg].T@self.G[energy_mask_bg,idxs_bg]
+		self.create_temp_array("GtG",self.G.T@self.G)
+		self.create_temp_array("GtX",self.G.T@self.X)
+		self.create_temp_array("GtX_bg",self.G[energy_mask_bg,idxs_bg].T@self.X[energy_mask_bg,:]) #####need to optimize to not use masks?????
+		self.create_temp_array("GtG_bg",self.G[energy_mask_bg,idxs_bg].T@self.G[energy_mask_bg,idxs_bg])
 		#self.GtX_elnes = self.G[energy_mask_elnes,idxs_elnes].T@self.X[energy_mask_elnes,:]
 		#self.GtG_elnes = self.G[energy_mask_elnes,idxs_elnes].T@self.G[energy_mask_elnes,idxs_elnes]
-		self._m+=["GtX_bg","GtX_elnes","GtG_bg","GtG_elnes","GtG","GtX"]
 
 		self.enforce_dtype()
 
@@ -90,8 +89,7 @@ class Alternate_BG_ELNES:
 				self.W = self.xp.maximum(self.W, self.eps)
 				self.H = self.xp.maximum(self.H, self.eps)
 
-		for attr in ["GtX_bg","GtG_bg","GtX_elnes","GtG_elnes","GtG","GtX"]:
-			if hasattr(self,attr):
-				delattr(self,attr)
+		self.delete_temp_arrays()
+
 		if self.analysis_description["decomposition"]["use_cupy"]:
 			self._cp2np()

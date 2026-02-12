@@ -18,16 +18,10 @@ class Default:
 	def _default_decomposition(self):
 		
 		self.get_model = self._default_get_model
-		self._default_init_WH()
-		
-		if not hasattr(self,"GtX") and not hasattr(self,"GtG"): # in case of full deconvolution they are already created
-			self.GtX = self.G.T@self.X
-			self.GtG = self.G.T@self.G
+		self._default_init_WH()	
 
-		if not "GtG" in self._m:
-			self._m+=["GtG"]
-		if not "GtX" in self._m:
-			self._m+=["GtX"]
+		self.create_temp_array("GtX",self.G.T@self.X)
+		self.create_temp_array("GtG",self.G.T@self.G)
 
 		self.enforce_dtype()
 
@@ -64,12 +58,8 @@ class Default:
 				self.H = self.xp.maximum(self.H, self.eps)
 
 
-		for attr in ["GtG","GtX"]:
-			if hasattr(self,attr):
-				delattr(self,attr)
-			if attr in self._m:
-				self._m.remove(attr)
-
+		self.delete_temp_arrays()
+		
 		if self.analysis_description["decomposition"]["use_cupy"]:
 			self._cp2np()
 

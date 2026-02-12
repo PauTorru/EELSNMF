@@ -108,6 +108,7 @@ class EELSNMF(ModelG,Decomposition,Plots,Analysis):
 
 		self._m = ["G","X","W","H"] 
 		self._hspy = ["cl","ll"] #will be skipped when pickling
+		self._temp_arrays = []
 
 		self.analysis_description = {}
 
@@ -190,6 +191,40 @@ class EELSNMF(ModelG,Decomposition,Plots,Analysis):
 
 		with open(os.path.join(path,fname+".pkl"),"wb") as f:
 			pkl.dump(self,f)
+
+
+	def create_temp_array(self,name,data):
+		"""
+		Allows creating temporary arrays to use within each decomposition method and to clean them afterwards.
+
+		Parameters
+		----------
+		name : str
+			The array will be stored as self.name
+		
+		data : array
+			The actual array
+
+		"""
+
+		setattr(self,name,data)
+		if not name in self._m:
+			self._m.append(name)
+		if not name in self._temp_arrays:
+			self._temp_arrays.append(name)
+
+	def delete_temp_arrays(self):
+		"""
+		Deletes all temporary arrays.
+		"""
+		for i in list(self._temp_arrays): #list() to shallow copy
+			self._temp_arrays.remove(i)
+			if i in self._m:
+				self._m.remove(i)
+			delattr(self,i)
+
+
+
 
 
 

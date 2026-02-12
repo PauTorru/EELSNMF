@@ -4,7 +4,7 @@ class Default_KL:
 
 
 	def _default_kl_update_W(self):
-		self.GW = self.G@self.W
+		self.create_temp_array("GW",self.G@self.W)
 		self.xp.divide(self.X,(self.GW@self.H+self.eps),out=self.X_over_GWH)
 		temp = self.X_over_GWH@self.H.T
 		num = self.G.T@temp
@@ -34,13 +34,9 @@ class Default_KL:
 		self.get_model = self._default_get_model
 		self._default_init_WH()
 		self.KL_rescaling()
-		self.GTsum1=self.G.T.sum(1)
-		if not "GTsum1" in self._m
-			self._m.append(["GTsum1"])
-		if not hasattr(self, "X_over_GWH"):
-			self.X_over_GWH = self.xp.empty_like(self.X)
-			self._m.append("X_over_GWH")
-		
+		self.create_temp_array("GTsum1",self.G.T.sum(1))
+		self.create_temp_array("X_over_GWH",self.xp.empty_like(self.X))
+
 		self.enforce_dtype()
 		if self.analysis_description["decomposition"]["use_cupy"]:
 			self._np2cp()
@@ -86,11 +82,7 @@ class Default_KL:
 		if self.analysis_description["decomposition"]["use_cupy"]:
 			self._cp2np()
 
-		for attr in ["GtG","GtX","X_over_GWH","GTsum1"]:
-			if hasattr(self,attr):
-				delattr(self,attr)
-			if attr in self._m:
-				self._m.remove(attr)
+		self.delete_temp_arrays()
 
 	def KL_divergence_error(self):
 		if hasattr(self,"GW"): #not the actual error (H is updated after computing self.GW) but faster to compute
