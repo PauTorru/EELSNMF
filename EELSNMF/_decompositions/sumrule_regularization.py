@@ -1,61 +1,65 @@
 from ..imports import *
 
 
-class Frobenius_EdgeTV:
+class SumRule_Regularization:
 	
-	def _EdgeTV_update_W(self,norm="mean"):
+	def _SumRule_update_W(self,norm="mean"):
 		HHt = self.H@self.H.T
 		WHHt = self.W@HHt
 		num = self.GtX@self.H.T 
 		denum = self.GtG@WHHt+self.eps
 
-		TVgrad = self._EdgeTV_gradient()
-		TVgrad_pos = self.xp.maximum(TVgrad,0)
-		TVgrad_neg = self.xp.maximum(-TVgrad,0)
+		srgrad = self._SumRule_gradient()
+		srgrad_pos = self.xp.maximum(srgrad,0)
+		srgrad_neg = self.xp.maximum(-srgrad,0)
 		if norm == "mean":
 			self._norm = self.xp.mean(num)
 		elif norm == "num":
 			self.create_temp_array("_norm", num)
 		elif norm == "none":
 			self._norm = self.xp.array(1.)
-		denum += self._norm*self.TV_lmbda*TVgrad_pos
-		num += self._norm*self.TV_lmbda*TVgrad_neg
+		denum += self._norm*self.sr_lmbda*srgrad_pos
+		num += self._norm*self.sr_lmbda*srgrad_neg
 		self.W*=(num/denum)
 
 # update H is the default one 
 	
-	def _EdgeTV(self):
+	def _calc_alpha(self):
+		"ratio between W  fine structure parameters and xsection"
+	
+	def _SumRule_reg(self):
 
 		J = 0
 		for k,v in self._edge_indices.items():
-
-			J += self.xp.abs(self.W[v[1:],:]-self.W[v[:-1],:]).sum() # sums contributions for all components together. Strictily first should sum over axis=0 (J of edge of each component) and then over axis=1.
+			xsection = self.model._G0[self.model.xsection_idx[]]
+			J += ((self.W[v[1:],:]-self.W[v[:-1],:])**2).sum() # sums contributions for all components together. Strictily first should sum over axis=0 (J of edge of each component) and then over axis=1.
 
 		return J
 	
-	def _EdgeTV_gradient(self):
+	def _SumRule_gradient(self):
 		self.old_dJdW[:] = self._dJdW[:]
 
 		for k,v in self._edge_indices.items():
 			diffs = self.xp.diff(self.W[v,:],axis=0)
-			#smooth_signs = diffs/self.xp.sqrt(diffs**2+eps)  for L1 TV 
-			#self._dJdW[v[1:-1],:] = smooth_signs[:-1,:]-smooth_signs[1:,:]
-			#self._dJdW[v[0],:] = -smooth_signs[0,:]
-			#self._dJdW[v[-1],:] = smooth_signs[-1,:]
-			self._dJdW[v[1:-1],:] = diffs[:-1,:]-diffs[1:,:] # for L2 TV
-			self._dJdW[v[0],:] = -diffs[0,:]
-			self._dJdW[v[-1],:] = diffs[-1,:]
+			smooth_signs = diffs/self.xp.sqrt(diffs**2+eps)  for L1 TV 
+			self._dJdW[v[1:-1],:] = smooth_signs[:-1,:]-smooth_signs[1:,:]
+			self._dJdW[v[0],:] = -smooth_signs[0,:]
+			self._dJdW[v[-1],:] = smooth_signs[-1,:]
+			
+			#self._dJdW[v[1:-1],:] = diffs[:-1,:]-diffs[1:,:] # for L2 TV
+			#self._dJdW[v[0],:] = -diffs[0,:]
+			#self._dJdW[v[-1],:] = diffs[-1,:]
 
-		self._dJdW = self.xp.clip((self._dJdW + self.inertia_dJdW*self.old_dJdW)/(1+self.inertia_dJdW),-self._dJdWclip,self._dJdWclip)
+		self._dJdW = self.xp.clip(self._dJdW + self.inertia_dJdW*self.old_dJdW,-self._dJdWclip,self.self._dJdWclip)
 		return self._dJdW
 
 	
 
-	def _EdgeTV_decomposition(self,lmbda=0.1,norm="mean",inertia_dJdW=1,clip=1.):
+	def _SumRule_decomposition(self,lmbda=0.1,norm="mean",inertia_dJdW=0):
 
 		self.inertia_dJdW = inertia_dJdW
 		self.TV_lmbda = lmbda
-		self._dJdWclip = clip#1#2*self.X.std()**2
+		self._dJdWclip = 2*self.X.std()**2
 		self.get_model = self._default_get_model
 		self._default_init_WH()
 		self._build_S()
