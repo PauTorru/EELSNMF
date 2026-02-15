@@ -22,7 +22,7 @@ class Frobenius_EdgeTV:
 		num += self._norm*self.TV_lmbda*TVgrad_neg
 		self.W*=(num/denum)
 
-		k_norm = self.xp.linalg.norm(W,axis=0,keepdims=True) + self.eps
+		k_norm = self.xp.linalg.norm(self.W,axis=0,keepdims=True) + self.eps
 		self.W /= k_norm
 		self.H *= k_norm.T
 
