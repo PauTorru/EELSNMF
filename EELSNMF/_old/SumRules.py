@@ -9,8 +9,8 @@ import pandas as pd
 import scipy as sc
 import matplotlib as mpl
 import importlib
-from . import main as enmf #EELSNMF as enmf
-importlib.reload(Gprep)#remove after debugging?
+#from . import main as enmf #EELSNMF as enmf
+#importlib.reload(Gprep)#remove after debugging?
 from sklearn.decomposition._nmf import _initialize_nmf as initialize_nmf
 try:
 	import cupy as cp
@@ -161,7 +161,7 @@ def adapt_G_SumRule(self, convergent_probe_correction = False,n_points=1000):
 		ii+=b
 
 
-	A = np.array([pp[:emax]@ga[:emax])for ga,emax in zip(sigma,list_emax)])
+	A = np.array([pp[:emax]@ga[:emax] for ga,emax in zip(sigma,list_emax)])
 	
 	K = np.diag(1/np.array(A))
 

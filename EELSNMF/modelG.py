@@ -54,8 +54,14 @@ class BaseModel:
 
 	def _rescale(self):
 		"""Needed to enforce smoothness between fine structure and xsections, applied before decomposition"""
-		self._scales = self.G.sum(0)
-		self.G[:,:] /= self._scales[None,:]
+		if not self._G_rescaled_to1:
+			self._scales = self.G.sum(0)
+			self.G[:,:] /= self._scales[None,:]
+			self._G_rescaled_to1 = True
+			if hasattr(self.parent,"W"):
+				self.parent.W[:,None]*=self._scales[None,:]
+		else:
+			pass
 		#for edge in self.parent.edges:
 			
 		#	idx = self.xsection_idx[edge]			
@@ -68,8 +74,12 @@ class BaseModel:
 
 	def _undo_rescale(self):
 
-		self.G[:,:] *= self._scales[None,:]
-		self.parent.W[:,:] /= self._scales[:,None]
+		if self._G_rescaled_to1:
+			self.G[:,:] *= self._scales[None,:]
+			self.parent.W[:,:] /= self._scales[:,None]
+			self._G_rescaled_to1 = False
+		else:
+			pass
 		"""Undo scaling after decomposition"""
 
 		#for edge in self.parent.edges:
