@@ -208,44 +208,43 @@ def match_axis(s,new_axis):
 gT2={300e3:489.1*1e3,200e3:343.8*1e3,80e3:149.2*1e3}
 
 def theta_E(e,kV):
-    return e/gT2[kV]
+	return e/gT2[kV]
 
 def convergent_factor(th,alpha,beta):
 
-    
-    out = []
-    for i,t in enumerate(th):
-        if t<=abs(alpha-beta):
-            f = min(1,(beta**2)/(alpha**2))
-        else:
-            x = (alpha**2+t**2-beta**2)/(2*alpha*t)
-            y = (beta**2+t**2-alpha**2)/(2*beta*t)
-            sqrt = np.sqrt(4*(alpha**2)*(beta**2)+(alpha**2+beta**2-t**2)**2)
-            f = (1/np.pi)*(np.arccos(x)+((beta**2)/(alpha**2))*np.arccos(y)-(1/(2*alpha**2))*sqrt)
-        out.append(f)
-    return np.array(out)
-    
+	out = []
+	for i,t in enumerate(th):
+		if t<=abs(alpha-beta):
+			f = min(1,(beta**2)/(alpha**2))
+		else:
+			x = (alpha**2+t**2-beta**2)/(2*alpha*t)
+			y = (beta**2+t**2-alpha**2)/(2*beta*t)
+			sqrt = np.sqrt(4*(alpha**2)*(beta**2)+(alpha**2+beta**2-t**2)**2)
+			f = (1/np.pi)*(np.arccos(x)+((beta**2)/(alpha**2))*np.arccos(y)-(1/(2*alpha**2))*sqrt)
+		out.append(f)
+	return np.array(out)
+	
 def convergent_psi(e,alpha,beta,kV=300e3,n_points=1000):
 	""" factor multiplying xsection in formula (24) in https://doi.org/10.1016/j.ultramic.2024.114084 """
-    assert alpha>0
-    assert beta>0
-    thE = theta_E(e,kV)
-    int_dth = integral_over_th(thE,alpha,beta,n_points)
-    return e/int_dth
+	assert alpha>0
+	assert beta>0
+	thE = theta_E(e,kV)
+	int_dth = integral_over_th(thE,alpha,beta,n_points)
+	return e/int_dth
 
 def integral_over_th(thE,alpha,beta,n_points):
-    th = np.linspace(0,alpha+beta,n_points)
-    dth = th[1]-th[0]
-    Fth=convergent_factor(th,alpha,beta)
-    integrand = (Fth*2*np.pi*th*dth)[:,np.newaxis]/(th[:,np.newaxis]**2+thE[np.newaxis,:]**2)
+	th = np.linspace(0,alpha+beta,n_points)
+	dth = th[1]-th[0]
+	Fth=convergent_factor(th,alpha,beta)
+	integrand = (Fth*2*np.pi*th*dth)[:,np.newaxis]/(th[:,np.newaxis]**2+thE[np.newaxis,:]**2)
 
-    return integrand.sum(0)
-    
-    
+	return integrand.sum(0)
+	
+	
 
 def psi(e,beta,kV=300e3):
 	""" factor multiplying xsection in formula (1) in https://doi.org/10.1016/j.ultramic.2024.114084"""
-    return e/np.log(1+(beta**2)/(theta_E(e,kV)**2))
+	return e/np.log(1+(beta**2)/(theta_E(e,kV)**2))
 
 
 
