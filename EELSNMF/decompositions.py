@@ -6,6 +6,7 @@ from ._decompositions.alternate_bg_elnes import Alternate_BG_ELNES
 from._decompositions.frobenius_penaltyedgewise import Frobenius_PenaltyEdgeWise
 from._decompositions.frobenius_edgetv import Frobenius_EdgeTV
 from._decompositions.edgewise_utils import EdgeWiseUtils
+from._decompositions.sumrule_regularization import LogSumRule_Regularization
 from .imports import *
 
 
@@ -15,7 +16,9 @@ class Decomposition(Default,
 					Alternate_BG_ELNES,
 					Frobenius_PenaltyEdgeWise,
 					Frobenius_EdgeTV,
-					EdgeWiseUtils):
+					EdgeWiseUtils,
+					LogSumRule_Regularization):
+
 	"""Mixin class for the decomposition functionalities of the EELSNMF class """
 	_DECOMPOSITION_CHOICES = {#(model_type,use_cupy)
 		("deltas",False,"Frobenius"):"_default_decomposition",

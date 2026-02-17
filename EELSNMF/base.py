@@ -22,7 +22,10 @@ def load(fname):
 	EELSNMF Object
 	"""
 	with open(fname,"rb") as f:
-		return pkl.load(f)
+		out = pkl.load(f)
+		if hasattr(out,"model"):
+			out.model.parent=out
+		return out
 
 class EELSNMF(ModelG,Decomposition,Plots,Analysis):
 	"""Class to perform EELSNMF analysis of EELS core-loss data.

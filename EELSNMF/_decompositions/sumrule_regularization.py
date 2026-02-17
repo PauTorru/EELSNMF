@@ -28,9 +28,9 @@ class LogSumRule_Regularization:
 	def _calcB(self,edge):
 		""" integral of original xsection over the fine structure energy range weighted by psi(E)"""
 		if self.model._G_rescaled_to1:
-			G0 = self.G0[:,self.model.xsection_idx[edge]]/self.model._scales[self.model.xsection_idx[edge]]
+			G0 = self._G0[:,self.model.xsection_idx[edge]]/self.model._scales[self.model.xsection_idx[edge]]
 		else:
-			G0 = self.G0[:,self.model.xsection_idx[edge]]
+			G0 = self._G0[:,self.model.xsection_idx[edge]]
 		ii,ff = find_index(self.energy_axis,self.fine_structure_ranges[edge])
 		return (self.psi[ii:ff]*G0[ii:ff]).sum()
 
@@ -65,9 +65,9 @@ class LogSumRule_Regularization:
 			self._dJcdW[i,:] = - log_ratio/(self.W[i,:]+self.eps)
 
 			# for edges below tolerance set gradient to 0:
-
-			self._dJcdW[v,:]*=(self.xp.abs(log_ratio)>=self.SR_tolerance)
-			self._dJcdW[i,:]*=(self.xp.abs(log_ratio)>=self.SR_tolerance)
+			
+			self._dJcdW[v,:]*=(self.xp.abs(log_ratio)>=self.SR_tolerance) # Tricky broadcasts.
+			self._dJcdW[i,:]*=(self.xp.abs(log_ratio)>=self.SR_tolerance)[0,:]
 
 		return  self._dJcdW
 
