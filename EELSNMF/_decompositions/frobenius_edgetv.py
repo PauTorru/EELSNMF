@@ -55,7 +55,7 @@ class Frobenius_EdgeTV:
 
 	
 
-	def _EdgeTV_decomposition(self,lmbda=0.1,norm="mean",inertia_dJdW=1,clip=1.):
+	def EdgeTV_decomposition(self,lmbda=0.1,norm="mean",inertia_dJdW=1,clip=1.):
 
 		self.inertia_dJdW = inertia_dJdW
 		self.TV_lmbda = lmbda

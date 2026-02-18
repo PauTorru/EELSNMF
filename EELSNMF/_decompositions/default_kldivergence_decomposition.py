@@ -20,7 +20,7 @@ class Default_KL:
 		self.H*=num/denum
 
 
-	def _default_kl_decomposition(self,rescale_WH = False, KL_rescaling_per_iter = False):
+	def default_kl_decomposition(self,rescale_WH = False, KL_rescaling_per_iter = False):
 		"""
 			rescale_WH : bool
 				Only used for metric="KLdivergence"

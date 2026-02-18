@@ -22,7 +22,7 @@ class Alternate_BG_ELNES:
 		self.H*=num/denum
 
 
-	def _alternate_decomposition(self,iters_bg=1,iters_elnes=1):
+	def alternate_decomposition(self,iters_bg=1,iters_elnes=1):
 		
 		self.get_model = self._default_get_model
 		self._default_init_WH()

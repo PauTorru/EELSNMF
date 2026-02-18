@@ -15,7 +15,7 @@ class Default:
 		self.H*=num/denum
 
 
-	def _default_decomposition(self):
+	def default_decomposition(self):
 		
 		self.get_model = self._default_get_model
 		self._default_init_WH()	

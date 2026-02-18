@@ -20,16 +20,16 @@ class Decomposition(Default,
 					LogSumRule_Regularization):
 
 	"""Mixin class for the decomposition functionalities of the EELSNMF class """
-	_DECOMPOSITION_CHOICES = {#(model_type,use_cupy)
-		("deltas",False,"Frobenius"):"_default_decomposition",
-		("deltas",True,"Frobenius"):"_default_decomposition",#"_cupy_default_decomposition", now default handles cp/np change
-		("convolved_single",False,"Frobenius"):"_default_decomposition",
-		("convolved_single",True,"Frobenius"):"_cupy_default_decomposition",
-		("deltas",False,"KLdivergence"):"_default_kl_decomposition",
-		("deltas",True,"KLdivergence"):"_cupy_default_kl_decomposition",
-		("convolved_single",False,"KLdivergence"):"_default_kl_decomposition",
-		("convolved_single",True,"KLdivergence"):"_cupy_default_kl_decomposition",
-		}
+	#_DECOMPOSITION_CHOICES = {#(model_type,use_cupy)
+	#	("deltas",False,"Frobenius"):"_default_decomposition",
+	#	("deltas",True,"Frobenius"):"_default_decomposition",#"_cupy_default_decomposition", now default handles cp/np change
+	#	("convolved_single",False,"Frobenius"):"_default_decomposition",
+	#	("convolved_single",True,"Frobenius"):"_cupy_default_decomposition",
+	#	("deltas",False,"KLdivergence"):"_default_kl_decomposition",
+	#	("deltas",True,"KLdivergence"):"_cupy_default_kl_decomposition",
+	#	("convolved_single",False,"KLdivergence"):"_default_kl_decomposition",
+	#	("convolved_single",True,"KLdivergence"):"_cupy_default_kl_decomposition",
+	#	}
 
 	def decomposition(self,n_components,
 								max_iters = 100,
@@ -43,8 +43,8 @@ class Decomposition(Default,
 								H_init = None,
 								error_skip_step=10,
 								eps=1e-10,
-								metric = "Frobenius",
-								decomposition_method = None,
+								#metric = "Frobenius",
+								decomposition_method = "default_decomposition",
 								rescale_G = True,
 								**kwargs):
 		"""
@@ -90,11 +90,12 @@ class Decomposition(Default,
 		metric : {"Frobenius","KLdivergence"}
 			Minimize the error of the model X=GWH according to this metric.
 			 (Default value = "Frobenius",)
-		decomposition_method : {"_default_decomposition",
-								"_default_kl_decomposition",
-								"_alternate_decomposition",
-								"_FPEW_decomposition",
-								"_EdgeTV_decomposition"}
+		decomposition_method : {"default_decomposition",
+								"default_kl_decomposition",
+								"alternate_decomposition",
+								"SumRule_decomposition",
+								"EdgeTV_decomposition,
+								"combinedTVSR_decomposition"}
 			function to be used for decomposition, see values of self._DECOMPOSITION_CHOICES.
 			If None, it is decided according to the model and metric chosen.
 			 (Default value = None)
@@ -141,8 +142,8 @@ class Decomposition(Default,
 		self._m +=["W_init","W_fixed_values","H_init"]
 		self._m = list(set(self._m))
 
-		if decomposition_method is None:
-			decomposition_method = self._DECOMPOSITION_CHOICES[(self.analysis_description["model_type"],self.analysis_description["decomposition"]["use_cupy"],self.analysis_description["decomposition"]["metric"])]
+		#if decomposition_method is None:
+		#	decomposition_method = self._DECOMPOSITION_CHOICES[(self.analysis_description["model_type"],self.analysis_description["decomposition"]["use_cupy"],self.analysis_description["decomposition"]["metric"])]
 		
 		self.analysis_description["decomposition"]["method"]=decomposition_method
 

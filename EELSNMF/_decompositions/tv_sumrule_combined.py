@@ -28,7 +28,7 @@ class TV_SumRule:
 		num += self._norm*(self.SR_lmbda*srgrad_neg+self.TV_lmbda*TVgrad_neg)
 		self.W*=(num/denum)
 
-	def _combinedTVSR_decomposition(self,
+	def combinedTVSR_decomposition(self,
 		TV_lmbda=0.1,
 		SR_lmbda=0.1,
 		norm="mean",

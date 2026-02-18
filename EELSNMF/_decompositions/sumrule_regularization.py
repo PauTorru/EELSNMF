@@ -73,7 +73,7 @@ class LogSumRule_Regularization:
 
 	
 
-	def _SumRule_decomposition(self,
+	def SumRule_decomposition(self,
 		lmbda=0.1,
 		norm="mean",
 		SR_tolerance = 10.,
