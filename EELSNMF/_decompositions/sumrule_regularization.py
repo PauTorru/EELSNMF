@@ -104,7 +104,10 @@ class LogSumRule_Regularization:
 
 			"""
 
-		self.SR_tolerance = self.xp.log(SR_tolerance)
+		if SR_tolerance==0:
+			self.SR_tolerance==0
+		else:
+			self.SR_tolerance = self.xp.log(SR_tolerance)
 		self.get_model = self._default_get_model
 		self._cbeam = convergent_beam_correction # for reporting purposes
 		if convergent_beam_correction:
