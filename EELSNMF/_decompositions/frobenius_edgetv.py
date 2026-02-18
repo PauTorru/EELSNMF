@@ -10,7 +10,7 @@ class Frobenius_EdgeTV:
 		denum = self.GtG@WHHt+self.eps
 
 		TVgrad = self._EdgeTV_gradient()
-		TVgrad_pos = self.xp.maximum(TVgrad,0)
+		TVgrad_pos = self.W*self._TV_majorizer #-> ensures convergence instead of self.xp.maximum(TVgrad,0) 
 		TVgrad_neg = self.xp.maximum(-TVgrad,0)
 		if norm == "mean":
 			self._norm = self.xp.mean(num)
@@ -74,6 +74,16 @@ class Frobenius_EdgeTV:
 		self.create_temp_array("GtG",self.G.T@self.G)
 		self.create_temp_array("_dJdW", np.zeros_like(self.W))
 		self.create_temp_array("old_dJdW",self._dJdW.copy())
+		self.create_temp_array("_TV_majorizer",np.zeros_like(self.W))
+		for v in self._edge_indices.values():
+
+			assert len(v)>2
+
+			# endpoints
+			self._TV_majorizer[v[0],:] = 2
+			self._TV_majorizer[v[-1],:] = 2
+			#interior
+			self._TV_majorizer[v[1:-1],:] = 4 
 
 		if self.analysis_description["decomposition"]["use_cupy"]:
 			self._np2cp()
