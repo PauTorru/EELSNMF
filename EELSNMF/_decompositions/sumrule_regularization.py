@@ -86,7 +86,7 @@ class LogSumRule_Regularization:
 		----------
 
 		lmbda: float
-			regularization parameter: |X-GWH|+lmbda*(log(x))**2, x = \Sigma psi(e)*W_l,k/B*W_xsection,k
+			regularization parameter: |X-GWH|+lmbda*(log(x))**2, x = sum( psi(e)*W_l,k)/B*W_xsection,k
 
 		norm: {"mean","num","none"}
 			normalization applied to the regularization:
