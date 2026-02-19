@@ -18,7 +18,7 @@ class EdgeWiseUtils:
 
 	def _rescaleWH(self):
 		#k_norm = self.xp.linalg.norm(self.W,axis=0,keepdims=True) + self.eps
-		k_norm = self.H.shape[1]/self.H.sum(1,keepdims=True)
+		k_norm = self.H.shape[1]/self.H.sum(1,keepdims=True)+self.eps
 		self.W /= k_norm.T
 		self.H *= k_norm
 
