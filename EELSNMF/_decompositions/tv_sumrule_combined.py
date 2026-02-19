@@ -13,9 +13,7 @@ class TV_SumRule:
 		srgrad_pos = self.xp.maximum(srgrad,0)
 		srgrad_neg = self.xp.maximum(-srgrad,0)
 
-		TVgrad = self._EdgeTV_gradient()
-		TVgrad_pos = self.W*self._TV_majorizer #-> ensures convergence instead of self.xp.maximum(TVgrad,0)
-		TVgrad_neg = self.xp.maximum(-TVgrad,0)
+		self._EdgeTV_gradient()
 		
 		if norm == "mean":
 			self._norm = self.xp.mean(num)
@@ -24,16 +22,14 @@ class TV_SumRule:
 		elif norm == "none":
 			self._norm = self.xp.array(1.)
 		
-		denum += self._norm*(self.SR_lmbda*srgrad_pos+self.TV_lmbda*TVgrad_pos)
-		num += self._norm*(self.SR_lmbda*srgrad_neg+self.TV_lmbda*TVgrad_neg)
+		denum += self._norm*(self.SR_lmbda*srgrad_pos+self.TV_lmbda*self._TVpos)
+		num += self._norm*(self.SR_lmbda*srgrad_neg+self.TV_lmbda*self._TVneg)
 		self.W*=(num/denum)
 
 	def combinedTVSR_decomposition(self,
 		TV_lmbda=0.1,
 		SR_lmbda=0.1,
 		norm="mean",
-		inertia_dJdW=1,
-		clip=1.,
 		SR_tolerance = 10.,
 		convergent_beam_correction = False,
 		convergent_factor_npoints = 1000 ):
@@ -55,12 +51,6 @@ class TV_SumRule:
 				"mean": lmbda = lmbda_0*(G.T@X@H.T).mean(), global normalization updated each iteration
 				"none": no normalization
 		
-		inertia_dJdW: float
-			inertia parameter for the TV gradient (gradient_i = (gradient_i+inertia*gradient_i-1))/(1+inertia)
-
-		clip: float
-			abs(TV gradient) is clipped to this value
-		
 		SR_tolerance: float
 			SumRule penalty is not applied for edges for which log(x)<log(SR_tolerance)
 
@@ -75,9 +65,7 @@ class TV_SumRule:
 			self.SR_tolerance==0
 		else:
 			self.SR_tolerance = self.xp.log(SR_tolerance)
-		self.inertia_dJdW = inertia_dJdW
 		self.TV_lmbda = TV_lmbda
-		self._dJdWclip = clip
 
 		self._cbeam = convergent_beam_correction # for reporting purposes
 		if convergent_beam_correction:
@@ -112,10 +100,13 @@ class TV_SumRule:
 
 		self.create_temp_array("GtX",self.G.T@self.X)
 		self.create_temp_array("GtG",self.G.T@self.G)
-		self.create_temp_array("_dJdW", np.zeros_like(self.W))
-		self.create_temp_array("old_dJdW",self._dJdW.copy())
+		self.create_temp_array("_TVpos", np.zeros_like(self.W))
+		self.create_temp_array("_TVneg", np.zeros_like(self.W))
+		
+		self._init_TV()
+
+
 		self.create_temp_array("_dJcdW", np.zeros_like(self.W))#sumrule gradient
-		self._init_TVmajorizer()
 
 		if self.analysis_description["decomposition"]["use_cupy"]:
 			self._np2cp()
