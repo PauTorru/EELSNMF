@@ -10,7 +10,7 @@ class Frobenius_EdgeTV:
 		denum = self.GtG@WHHt+self.eps
 
 		TVgrad = self._EdgeTV_gradient()
-		TVgrad_pos = self._TV_majorizer/(self.W+self.eps)# for quadratic -> self.W*self._TV_majorizer #-> ensures convergence instead of self.xp.maximum(TVgrad,0) 
+		TVgrad_pos = self._TV_majorizer/(self.W+self.delta)# for quadratic -> self.W*self._TV_majorizer #-> ensures convergence instead of self.xp.maximum(TVgrad,0) 
 		TVgrad_neg = self.xp.maximum(-TVgrad,0)
 		if norm == "mean":
 			self._norm = self.xp.mean(num)
@@ -48,7 +48,7 @@ class Frobenius_EdgeTV:
 			self._dJdW[v[0],:] = -diffs[0,:]
 			self._dJdW[v[-1],:] = diffs[-1,:]
 
-		self._dJdW /=self.W+self.eps ####################
+		self._dJdW /=self.W+self.delta ####################
 
 		self._dJdW = self.xp.clip((self._dJdW + self.inertia_dJdW*self.old_dJdW)/(1+self.inertia_dJdW),-self._dJdWclip,self._dJdWclip)
 		return self._dJdW
@@ -65,7 +65,7 @@ class Frobenius_EdgeTV:
 			#interior
 			self._TV_majorizer[v[1:-1],:] = 4 
 
-	def EdgeTV_decomposition(self,lmbda=0.1,norm="mean",inertia_dJdW=1,clip=1.):
+	def EdgeTV_decomposition(self,lmbda=0.1,norm="mean",inertia_dJdW=1,clip=1.,delta=1e-2):
 
 		self.inertia_dJdW = inertia_dJdW
 		self.TV_lmbda = lmbda
@@ -74,6 +74,7 @@ class Frobenius_EdgeTV:
 		self._default_init_WH()
 		self._build_S()
 		self.enforce_dtype()
+		self.delta=delta
 		#self.WS_reciprocal_sum=np.zeros_like(self.W)
 		#self.W2 = self.W**2
 		#self._m += ["WS_reciprocal_sum","W2"]
