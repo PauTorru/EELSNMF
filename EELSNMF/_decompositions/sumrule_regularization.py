@@ -32,7 +32,8 @@ class LogSumRule_Regularization:
 		else:
 			G0 = self._G0[:,self.model.xsection_idx[edge]]
 		ii,ff = find_index(self.energy_axis,self.fine_structure_ranges[edge])
-		return (self.psi[ii:ff]*G0[ii:ff]).sum()
+		self.create_temp_array("_B_"+edge,(self.psi[ii:ff]*G0[ii:ff]).sum())
+		return getattr(self,"_B_"+edge)
 
 
 	
