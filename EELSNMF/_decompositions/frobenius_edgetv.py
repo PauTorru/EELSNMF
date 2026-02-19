@@ -10,7 +10,7 @@ class Frobenius_EdgeTV:
 		denum = self.GtG@WHHt+self.eps
 
 		TVgrad = self._EdgeTV_gradient()
-		TVgrad_pos = self.W*self._TV_majorizer #-> ensures convergence instead of self.xp.maximum(TVgrad,0) 
+		TVgrad_pos = self._TV_majorizer/(self.W+self.eps)# for quadratic -> self.W*self._TV_majorizer #-> ensures convergence instead of self.xp.maximum(TVgrad,0) 
 		TVgrad_neg = self.xp.maximum(-TVgrad,0)
 		if norm == "mean":
 			self._norm = self.xp.mean(num)
@@ -39,7 +39,7 @@ class Frobenius_EdgeTV:
 		self.old_dJdW[:] = self._dJdW[:]
 
 		for k,v in self._edge_indices.items():
-			diffs = self.xp.diff(self.W[v,:],axis=0)
+			diffs = self.xp.log(self.W[v[1:],:]+self.eps)-self.xp.log(self.W[v[:-1],:]+self.eps) #########self.xp.diff(self.W[v,:],axis=0)
 			#smooth_signs = diffs/self.xp.sqrt(diffs**2+eps)  for L1 TV 
 			#self._dJdW[v[1:-1],:] = smooth_signs[:-1,:]-smooth_signs[1:,:]
 			#self._dJdW[v[0],:] = -smooth_signs[0,:]
@@ -47,6 +47,8 @@ class Frobenius_EdgeTV:
 			self._dJdW[v[1:-1],:] = diffs[:-1,:]-diffs[1:,:] # for L2 TV
 			self._dJdW[v[0],:] = -diffs[0,:]
 			self._dJdW[v[-1],:] = diffs[-1,:]
+
+		self._dJdW /=self.W+self.eps ####################
 
 		self._dJdW = self.xp.clip((self._dJdW + self.inertia_dJdW*self.old_dJdW)/(1+self.inertia_dJdW),-self._dJdWclip,self._dJdWclip)
 		return self._dJdW
@@ -83,7 +85,7 @@ class Frobenius_EdgeTV:
 		self.create_temp_array("_dJdW", np.zeros_like(self.W))
 		self.create_temp_array("old_dJdW",self._dJdW.copy())
 		self._init_TVmajorizer()
-		
+
 		if self.analysis_description["decomposition"]["use_cupy"]:
 			self._np2cp()
 
