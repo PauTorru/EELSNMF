@@ -92,7 +92,9 @@ class TV_SumRule:
 				self.E0)
 
 		self.SR_lmbda = SR_lmbda
-		self.B ={edge:self._calcB(edge) for edge in self.edges}
+		self.B ={}
+		for edge in self.edges:
+			self.B[edge]=self._calcB(edge) # generating dict with comprehension breaks cp2np
 		self._edge_psi = {}
 		for edge in self.edges:
 			ii,ff = find_index(self.energy_axis,self.fine_structure_ranges[edge])
