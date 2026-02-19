@@ -138,17 +138,14 @@ class Decomposition(Default,
 			self.xp = np
 
 		self.analysis_description["decomposition"]["Fix_W"] = not W_fixed_bool is None
-		self.analysis_description["decomposition"]["metric"] = self.metric
+		#self.analysis_description["decomposition"]["metric"] = self.metric
 
 		self.random_state_nmf=random_state_nmf
 		self.W_init=W_init
 		self.W_fixed_bool=W_fixed_bool
 		self.W_fixed_values=W_fixed_values
 		self.H_init = H_init
-		if metric == "KLdivergence":
-			self._m += ["GW","X_over_GWH","GTsum1"]
-		elif metric == "Frobenius":
-			self._m += ["GtG","GtX"]
+
 		self._m +=["W_init","W_fixed_values","H_init"]
 		self._m = list(set(self._m))
 
@@ -166,13 +163,7 @@ class Decomposition(Default,
 
 		if self.rescale_G:
 			self.model._undo_rescale()
-		
-		#clear memory
-		for attr in ["GtX","GtG","GW","X_over_GWH","GTsum1"]:
-			if hasattr(self,attr):
-				delattr(self,attr)
-			if attr in self._m:
-				self._m.remove(attr)
+			
 		gc.collect()
 
 	def apply_fix_W(self):
