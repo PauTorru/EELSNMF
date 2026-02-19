@@ -33,7 +33,7 @@ class LogSumRule_Regularization:
 			G0 = self._G0[:,self.model.xsection_idx[edge]]
 		ii,ff = find_index(self.energy_axis,self.fine_structure_ranges[edge])
 		self.create_temp_array("_B_"+edge,(self.psi[ii:ff]*G0[ii:ff]).sum())
-		return getattr(self,"_B_"+edge)
+		return "_B_"+edge#getattr(self,)
 
 
 	
@@ -42,7 +42,7 @@ class LogSumRule_Regularization:
 
 		for i,edge in enumerate(self.edges):
 
-			x = ((self._edge_psi[edge][:,None]*self.W[self._edge_indices[edge],:]).sum(0)+self.eps)/(self.B[edge]*self.W[self.model.xsection_idx[edge],:]+self.eps)
+			x = ((getattr(self,self._edge_psi[edge])[:,None]*self.W[self._edge_indices[edge],:]).sum(0)+self.eps)/(getattr(self,self.B[edge])*self.W[self.model.xsection_idx[edge],:]+self.eps)
 			J += (0.5*self.xp.log(x)**2).sum() #sums over components
 
 
@@ -52,15 +52,15 @@ class LogSumRule_Regularization:
 		self._dJcdW[:] = 0
 		for edge in self.edges:
 			v = self._edge_indices[edge]
-			elnes_term = (self._edge_psi[edge][:,None]*self.W[v,:]).sum(0)
+			elnes_term = (getattr(self,self._edge_psi[edge])[:,None]*self.W[v,:]).sum(0)
 			i = self.model.xsection_idx[edge]
-			xs_term = (self.B[edge]*self.W[i,:]+self.eps)
+			xs_term = (getattr(self,self.B[edge])*self.W[i,:]+self.eps)
 
 			x = elnes_term/xs_term
 			log_ratio = self.xp.log(x)[None,:] 
 			
 			# elnes coeficients
-			self._dJcdW [v,:] = log_ratio*self._edge_psi[edge][:,None]/elnes_term[None,:]
+			self._dJcdW [v,:] = log_ratio*getattr(self,self._edge_psi[edge])[:,None]/elnes_term[None,:]
 
 			# xs coeficients
 			self._dJcdW[i,:] = - log_ratio/(self.W[i,:]+self.eps)
@@ -131,7 +131,7 @@ class LogSumRule_Regularization:
 		for edge in self.edges:
 			ii,ff = find_index(self.energy_axis,self.fine_structure_ranges[edge])
 			self.create_temp_array("_"+edge+"_psi",self.psi[ii:ff])
-			self._edge_psi[edge] = getattr(self,"_"+edge+"_psi")#self.psi[ii:ff]
+			self._edge_psi[edge] = "_"+edge+"_psi"#getattr(self,)#self.psi[ii:ff]
 
 		self._default_init_WH()
 		self._build_S()

@@ -99,7 +99,7 @@ class TV_SumRule:
 		for edge in self.edges:
 			ii,ff = find_index(self.energy_axis,self.fine_structure_ranges[edge])
 			self.create_temp_array("_"+edge+"_psi",self.psi[ii:ff])
-			self._edge_psi[edge] = getattr(self,"_"+edge+"_psi")#self.psi[ii:ff]
+			self._edge_psi[edge] = "_"+edge+"_psi"
 
 
 		self.get_model = self._default_get_model
