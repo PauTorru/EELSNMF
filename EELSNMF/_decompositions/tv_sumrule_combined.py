@@ -13,7 +13,7 @@ class TV_SumRule:
 		srgrad_pos = self.xp.maximum(srgrad,0)
 		srgrad_neg = self.xp.maximum(-srgrad,0)
 
-		tvgrad = self._EdgeTV_gradient()
+		TVgrad = self._EdgeTV_gradient()
 		TVgrad_pos = self._TV_majorizer/(self.W+self.eps)# for quadratic -> self.W*self._TV_majorizer #-> ensures convergence instead of self.xp.maximum(TVgrad,0)
 		TVgrad_neg = self.xp.maximum(-TVgrad,0)
 		
