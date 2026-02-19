@@ -163,6 +163,8 @@ class LogSumRule_Regularization:
 
 				self.apply_fix_W()
 
+				self._rescaleWH()
+
 				self._default_update_H()
 				
 				if i%self.error_skip_step==0:

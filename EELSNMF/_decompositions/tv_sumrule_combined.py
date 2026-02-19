@@ -14,7 +14,7 @@ class TV_SumRule:
 		srgrad_neg = self.xp.maximum(-srgrad,0)
 
 		tvgrad = self._EdgeTV_gradient()
-		TVgrad_pos = self.xp.maximum(TVgrad,0)
+		TVgrad_pos = self.W*self._TV_majorizer #TVgrad_pos = self.xp.maximum(TVgrad,0)
 		TVgrad_neg = self.xp.maximum(-TVgrad,0)
 		
 		if norm == "mean":
@@ -112,6 +112,7 @@ class TV_SumRule:
 		self.create_temp_array("_dJdW", np.zeros_like(self.W))
 		self.create_temp_array("old_dJdW",self._dJdW.copy())
 		self.create_temp_array("_dJcdW", np.zeros_like(self.W))#sumrule gradient
+		self._init_TVmajorizer()
 
 		if self.analysis_description["decomposition"]["use_cupy"]:
 			self._np2cp()
@@ -133,6 +134,8 @@ class TV_SumRule:
 				self._TVSR_update_W(norm=norm)
 
 				self.apply_fix_W()
+
+				self._rescaleWH()
 
 				self._default_update_H()
 				
