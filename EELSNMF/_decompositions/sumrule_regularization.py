@@ -126,7 +126,8 @@ class LogSumRule_Regularization:
 		self._edge_psi = {}
 		for edge in self.edges:
 			ii,ff = find_index(self.energy_axis,self.fine_structure_ranges[edge])
-			self._edge_psi[edge] = self.psi[ii:ff]
+			self.create_temp_array("_"+edge+"_psi",self.psi[ii:ff])
+			self._edge_psi[edge] = getattr(self,"_"+edge+"_psi")#self.psi[ii:ff]
 
 		self._default_init_WH()
 		self._build_S()
