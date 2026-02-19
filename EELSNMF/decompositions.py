@@ -57,39 +57,47 @@ class Decomposition(Default,
 		max_iters : int
 			Maximum number of iterations for the decomposition algorithm
 			 (Default value = 100)
+		
 		tol : float
 			Tolerance at which to stop the decomposition (change in total erro between one iteration and the previous one)
 			 (Default value = 1e-6)
+		
 		use_cupy : bool
 			Wheter or not to use GPU acceleration
 			 (Default value = False)
+		
 		init_nmf : str
 			One of {‘random’, ‘nndsvd’, ‘nndsvda’, ‘nndsvdar’, ‘custom’}. see init parameter in sklearn.decomposition.NMF
 			 (Default value = None)
+		
 		random_state_nmf : int
 			Random seed used if init_nmf="random".
 			 (Default value = None)
+		
 		W_init : array
 			Inital W
 			 (Default value = None)
+		
 		W_fixed_bool : array (dtype="bool")
 			Elements at self.W[W_fixed_bool] are fixed
 			 (Default value = None)
+		
 		W_fixed_values : array
 			self.W[W_fixed_bool]=W_fixed_values
 			 (Default value = None)
+		
 		H_init : array
 			Initial H.
 			 (Default value = None)
+		
 		error_skip_step : int
 			Calculate full error only every erro_skip_step iterations. Increase for speed if analyzed dataset is very big.
 			 (Default value = 10)
+		
 		eps : float
 			value added to protect agains divisions by 0
 			 (Default value = 1e-10)
-		metric : {"Frobenius","KLdivergence"}
-			Minimize the error of the model X=GWH according to this metric.
-			 (Default value = "Frobenius",)
+
 		decomposition_method : {"default_decomposition",
 								"default_kl_decomposition",
 								"alternate_decomposition",
@@ -113,7 +121,9 @@ class Decomposition(Default,
 		self.error_skip_step = error_skip_step
 		self.init_nmf=init_nmf
 		self.eps=eps
-		self.metric=metric
+		#self.metric=metric # metric : {"Frobenius","KLdivergence"}
+			#Minimize the error of the model X=GWH according to this metric.
+			#(Default value = "Frobenius",)
 		self.rescale_G = rescale_G
 
 
