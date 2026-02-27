@@ -21,11 +21,20 @@ def load(fname):
 	-------
 	EELSNMF Object
 	"""
-	with open(fname,"rb") as f:
-		out = pkl.load(f)
-		if hasattr(out,"model"):
-			out.model.parent=out
-		return out
+		
+	try:
+		with open(fname,"rb") as f:
+			out = pkl.load(f)
+			if hasattr(out,"model"):
+				out.model.parent=out
+			return out
+	except ModuleNotFoundError as e:
+		if e.name == "cupy":
+			import sys
+			sys.modules["cupy"] = np
+			sys.modules["cupy._core"] = np
+			sys.modules["cupy._core.core"] = np
+			print("This object was created in an environment with cupy. Falling back to numpy for unpickling. ")
 
 class EELSNMF(ModelG,Decomposition,Plots,Analysis):
 	"""Class to perform EELSNMF analysis of EELS core-loss data.
