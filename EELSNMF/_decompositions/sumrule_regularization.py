@@ -66,9 +66,16 @@ class LogSumRule_Regularization:
 			self._dJcdW[i,:] = - log_ratio/(self.W[i,:]+self.eps)
 
 			# for edges below tolerance set gradient to 0:
-			
-			self._dJcdW[v,:]*=(self.xp.abs(log_ratio)>=self.SR_tolerance) # Tricky broadcasts.
-			self._dJcdW[i,:]*=(self.xp.abs(log_ratio)>=self.SR_tolerance)[0,:]
+			abs_lr = self.xp.abs(log_ratio)
+			exceed_tolerance = (abs_lr>=self.SR_tolerance)
+			self._dJcdW[v,:]*= exceed_tolerance # Tricky broadcasts.
+			self._dJcdW[i,:]*= exceed_tolerance[0,:]
+			if self.constrain == "elnes":
+				self._dJcdW[i,:]*=0.
+			elif self.constrain == "xs":
+				self._dJcdW[v,:]*=0.
+			else:
+				pass
 
 		return  self._dJcdW
 
@@ -79,7 +86,8 @@ class LogSumRule_Regularization:
 		norm="mean",
 		SR_tolerance = 10.,
 		convergent_beam_correction=False,
-		convergent_factor_npoints=1000):
+		convergent_factor_npoints=1000,
+		constrain = "both"):
 		"""Decomposition method to enforce sum_rules up to a tolerance
 
 
@@ -95,7 +103,8 @@ class LogSumRule_Regularization:
 				"mean": lmbda = lmbda_0*(G.T@X@H.T).mean(), global normalization updated each iteration
 				"none": no normalization
 		SR_tolerance: float
-			SumRule penalty is not applied for edges for which log(x)<log(SR_tolerance)
+			SumRule penalty is not applied for edges for which log(x)<log(SR_tolerance).
+			The tolarence is applied on ELNES/XSection ratio, so SR_tolerance = 1 means no tolerance.
 
 		convergent_beam_correction : bool
 			Wether to apply convergent beam formulation for the energy weight function of the sum rule, formula (24) in https://doi.org/10.1016/j.ultramic.2024.114084
@@ -103,9 +112,13 @@ class LogSumRule_Regularization:
 		convergent_factor_npoints: int
 			See EELSNMF.utils.convergent_psi
 
-			"""
+		constrain: {"xs","elnes","both"}
+			Whether to apply the SumRule gradient only on the xsection terms of W, only on the ELNES terms or on both.
+			Default: "both"
 
-		if SR_tolerance==0:
+			"""
+		self.constrain = constrain
+		if SR_tolerance<=1:
 			self.SR_tolerance = 0
 		else:
 			self.SR_tolerance = self.xp.log(SR_tolerance)
