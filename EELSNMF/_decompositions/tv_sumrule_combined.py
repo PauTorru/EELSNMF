@@ -22,7 +22,7 @@ class TV_SumRule:
 		elif norm == "none":
 			self._norm = self.xp.array(1.)
 		
-		denum += self._norm*(self.SR_lmbda*srgrad_pos+self.TV_lmbda*self._TVpos)
+		denum += self._norm*(self.SR_lmbda*srgrad_pos+self.TV_lmbda*self._TVpos+self.eps)
 		num += self._norm*(self.SR_lmbda*srgrad_neg+self.TV_lmbda*self._TVneg)
 		self.W*=(num/denum)
 
@@ -32,7 +32,9 @@ class TV_SumRule:
 		norm="mean",
 		SR_tolerance = 10.,
 		convergent_beam_correction = False,
-		convergent_factor_npoints = 1000 ):
+		convergent_factor_npoints = 1000,
+		constrain = "both",
+		delta =1e-3 ):
 		"""Decomposition method enforcing sum_rules and total variation minimization.
 
 
@@ -60,8 +62,18 @@ class TV_SumRule:
 		convergent_factor_npoints: int
 			See EELSNMF.utils.convergent_psi
 
+		constrain: {"xs","elnes","both"}
+			Whether to apply the SumRule gradient only on the xsection terms of W, only on the ELNES terms or on both.
+			Default: "both"
+
+		delta: float
+			Constant for numerical stability in log((elnes+delta)/(xsection+delta))
+
+
 			"""
-		if SR_tolerance==0:
+		self.delta=delta
+		self.constrain = constrain
+		if SR_tolerance<=1:
 			self.SR_tolerance==0
 		else:
 			self.SR_tolerance = self.xp.log(SR_tolerance)

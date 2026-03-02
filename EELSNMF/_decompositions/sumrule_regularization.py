@@ -42,7 +42,7 @@ class LogSumRule_Regularization:
 
 		for i,edge in enumerate(self.edges):
 
-			x = ((getattr(self,self._edge_psi[edge])[:,None]*self.W[self._edge_indices[edge],:]).sum(0)+self.eps)/(getattr(self,self.B[edge])*self.W[self.model.xsection_idx[edge],:]+self.eps)
+			x = ((getattr(self,self._edge_psi[edge])[:,None]*self.W[self._edge_indices[edge],:]).sum(0)+self.delta)/(getattr(self,self.B[edge])*self.W[self.model.xsection_idx[edge],:]+self.delta)
 			J += (0.5*self.xp.log(x)**2).sum() #sums over components
 
 
@@ -54,16 +54,16 @@ class LogSumRule_Regularization:
 			v = self._edge_indices[edge]
 			elnes_term = (getattr(self,self._edge_psi[edge])[:,None]*self.W[v,:]).sum(0)
 			i = self.model.xsection_idx[edge]
-			xs_term = (getattr(self,self.B[edge])*self.W[i,:]+self.eps)
+			xs_term = (getattr(self,self.B[edge])*self.W[i,:])
 
-			x = elnes_term/xs_term
+			x = (elnes_term+self.delta)/(xs_term+self.delta)
 			log_ratio = self.xp.log(x)[None,:] 
 			
 			# elnes coeficients
-			self._dJcdW [v,:] = log_ratio*getattr(self,self._edge_psi[edge])[:,None]/elnes_term[None,:]
+			self._dJcdW [v,:] = log_ratio*getattr(self,self._edge_psi[edge])[:,None]/(elnes_term[None,:]+self.delta)
 
 			# xs coeficients
-			self._dJcdW[i,:] = - log_ratio/(self.W[i,:]+self.eps)
+			self._dJcdW[i,:] = - log_ratio*getattr(self,self.B[edge])/(xs_term+self.delta)
 
 			# for edges below tolerance set gradient to 0:
 			abs_lr = self.xp.abs(log_ratio)
@@ -71,9 +71,9 @@ class LogSumRule_Regularization:
 			self._dJcdW[v,:]*= exceed_tolerance # Tricky broadcasts.
 			self._dJcdW[i,:]*= exceed_tolerance[0,:]
 			if self.constrain == "elnes":
-				self._dJcdW[i,:]*=0.
+				self._dJcdW[i,:] = 0.
 			elif self.constrain == "xs":
-				self._dJcdW[v,:]*=0.
+				self._dJcdW[v,:] = 0.
 			else:
 				pass
 
@@ -84,10 +84,11 @@ class LogSumRule_Regularization:
 	def SumRule_decomposition(self,
 		lmbda=0.1,
 		norm="mean",
-		SR_tolerance = 10.,
+		SR_tolerance = 2.,
 		convergent_beam_correction=False,
 		convergent_factor_npoints=1000,
-		constrain = "both"):
+		constrain = "both",
+		delta = 1e-3):
 		"""Decomposition method to enforce sum_rules up to a tolerance
 
 
@@ -116,7 +117,11 @@ class LogSumRule_Regularization:
 			Whether to apply the SumRule gradient only on the xsection terms of W, only on the ELNES terms or on both.
 			Default: "both"
 
+		delta: float
+			Constant for numerical stability in log((elnes+delta)/(xsection+delta))
+
 			"""
+		self.delta = delta
 		self.constrain = constrain
 		if SR_tolerance<=1:
 			self.SR_tolerance = 0
