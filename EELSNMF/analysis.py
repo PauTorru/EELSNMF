@@ -3,30 +3,19 @@ from .imports import *
 
 
 default_q_methods = {
-	("deltas","_default_decomposition"):{
+	("deltas","default_decomposition"):{
 	"component_quantification":"component_standard_q",
 	"spatial_quantification": "spatial_standard_q"
 	},
-	("convolved_single","standard"):{
+	("convolved_single","default_decomposition"):{
 	"component_quantification":"component_standard_q",
 	"spatial_quantification":"spatial_standard_q"
 	},
-	("deltas","_cupy_default_decomposition"):{
+	("deltas","default_kl_decomposition"):{
 	"component_quantification":"component_standard_q",
 	"spatial_quantification": "spatial_standard_q"
 	},
-	("convolved_single","_cupy_default_decomposition"):{
-	"component_quantification":"component_standard_q",
-	"spatial_quantification":"spatial_standard_q"
-	},
-	("deltas","_default:kl_decomposition"):{
-	"component_quantification":"component_standard_q",
-	"spatial_quantification": "spatial_standard_q"
-	},
-	("deltas","_cupy_default_kl_decomposition"):{
-	"component_quantification":"component_standard_q",
-	"spatial_quantification": "spatial_standard_q"
-	},
+
 
 	###################################################### Not implemented:
 
@@ -97,7 +86,7 @@ class Analysis:
 		"""
 
 		if method is None:
-			method = self._default_component_quantification_method()
+			method = getattr(self,"component_standard_q")
 		elif isinstance(method,str):
 			method = getattr(self,method)
 
@@ -174,7 +163,7 @@ class Analysis:
 		"""
 
 		if method is None:
-			method = self._default_spatial_quantification_method()
+			method = getattr(self,"spatial_standard_q")
 
 		array_spatial_quantification = method()
 
