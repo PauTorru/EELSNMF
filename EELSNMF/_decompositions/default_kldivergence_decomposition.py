@@ -71,10 +71,11 @@ class Default_KL:
 				self.H = self.xp.maximum(self.H, self.eps)
 
 				if rescale_WH:
-					scale = self.W.sum(0,keepdims=True)
-					scale = self.xp.maximum(scale, self.eps)
-					self.W /= scale
-					self.H *= scale.T
+					self._rescaleWH()
+					#scale = self.W.sum(0,keepdims=True)
+					#scale = self.xp.maximum(scale, self.eps)
+					#self.W /= scale
+					#self.H *= scale.T
 
 				if KL_rescaling_per_iter:
 					self.KL_rescaling()

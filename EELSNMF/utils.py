@@ -222,7 +222,7 @@ def convergent_factor(th,alpha,beta):
 			sqrt = np.sqrt(4*(alpha**2)*(beta**2)+(alpha**2+beta**2-t**2)**2)
 			f = (1/np.pi)*(np.arccos(x)+((beta**2)/(alpha**2))*np.arccos(y)-(1/(2*alpha**2))*sqrt)
 		out.append(f)
-	return np.array(out)
+	return np.nan_to_num(np.array(out))
 	
 def convergent_psi(e,alpha,beta,kV=300e3,n_points=1000):
 	""" factor multiplying xsection in formula (24) in https://doi.org/10.1016/j.ultramic.2024.114084 """
