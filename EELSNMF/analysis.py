@@ -177,6 +177,51 @@ class Analysis:
 
 		return self.chemical_maps
 
+	def evaluate_comp_contributions(self):
+		X = self.X
+		model = self.get_model()
+		normX = (X**2).sum()
+		Emodel = X-model
+		normEmodel = (Emodel**2).sum()
+
+		R2 = 1-normEmodel/normX
+
+		loo, power, ev = [],[],[] #leave-one-out,power,explained variance approx
+		for k in range(self.n_components):
+			wk = self.G @ self.W[:, k]
+			hk = self.H[k, :]
+
+			wk_sq = np.sum(wk**2)
+			hk_sq = np.sum(hk**2)
+			comp_sq = wk_sq * hk_sq
+
+			power.append(comp_sq/normX)
+
+			interaction_X = (wk.T @ X) @ hk.T
+			#Ek = normX+comp_sq-2*interaction_X 
+			evk = (2*interaction_X-comp_sq)/normX  #expansion of (||X||-||X-Comp||)/||X||
+			ev.append(evk)
+			
+			
+			interaction_Emodel = wk.T @ Emodel @ hk.T
+			Ck = (comp_sq+2*interaction_Emodel)/normX # expansion of ||Error_withoutK||-||Error_fullmodel||=||X-(Model-Comp)||-||X-Model||
+			#is equal to power if the model is fully converged
+			loo.append(Ck)
+
+		loo,power,ev= [np.array(i) for i in [loo,power,ev]]
+		print(f"Total explained : {R2}")
+		fancy_summary = pd.DataFrame(data ={
+			"Component":range(self.n_components),
+			"Leave-Out Loss":loo,
+			"Relative Leave-Out Loss (%)":100*loo/loo.sum(),
+			"Power":power,
+			"Relative Power (%)":power*100/power.sum(),
+			"Explained Variance":ev,
+			"Relative Explained Variance (%)":100*ev/ev.sum()	
+		})
+		display(fancy_summary)
+		return loo,power,ev
+
 
 
 
