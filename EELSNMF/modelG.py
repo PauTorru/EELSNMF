@@ -60,6 +60,7 @@ class BaseModel:
 			self._G_rescaled_to1 = True
 			if hasattr(self.parent,"W"):
 				self.parent.W*=self._scales[:,None]
+				self.parent._m.append(self._scales)
 		else:
 			pass
 		#for edge in self.parent.edges:
