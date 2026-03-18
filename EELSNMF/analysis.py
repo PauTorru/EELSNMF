@@ -177,7 +177,23 @@ class Analysis:
 
 		return self.chemical_maps
 
-	def evaluate_comp_contributions(self):
+	def evaluate_comp_contributions(self,edge = None):
+		"""
+		Calculates the contribution of a component to the overall model in terms of three figures of merit: Leave-out loss, power and explained variance.
+
+		Parameters
+		----------
+		Edge : None or one of self.edges
+			If not None, the contributions relative to only that edge are considered
+			 (Default value = None)
+
+		Returns
+		-------
+		tuple
+			constains three lists: leave out loss for every component, power of every component and explained variance of every component.
+
+		"""		
+
 		X = self.X
 		model = self.get_model()
 		normX = (X**2).sum()
@@ -188,7 +204,11 @@ class Analysis:
 
 		loo, power, ev = [],[],[] #leave-one-out,power,explained variance approx
 		for k in range(self.n_components):
-			wk = self.G @ self.W[:, k]
+			if edge is None:
+				wk = self.G @ self.W[:, k]
+			else:
+				idxs = self.model._edge_slices[edge]
+				wk = self.G[:,idxs]@self.W[idxs,k]
 			hk = self.H[k, :]
 
 			wk_sq = np.sum(wk**2)
@@ -219,7 +239,11 @@ class Analysis:
 			"Explained Variance":ev,
 			"Relative Explained Variance (%)":100*ev/ev.sum()	
 		})
-		display(fancy_summary)
+		try:
+			display(fancy_summary)
+		except NameError:
+			print(fancy_summary)
+
 		return loo,power,ev
 
 
