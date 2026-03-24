@@ -21,10 +21,35 @@ class TV_SumRule:
 			self.create_temp_array("_norm", num)
 		elif norm == "none":
 			self._norm = self.xp.array(1.)
-		
-		denum += self._norm*(self.SR_lmbda*srgrad_pos+self.TV_lmbda*self._TVpos+self.eps)
-		num += self._norm*(self.SR_lmbda*srgrad_neg+self.TV_lmbda*self._TVneg)
+
+
+		denum += self._norm*(self.TV_lmbda*self._TVpos+self.eps)
+		num += self._norm*(self.TV_lmbda*self._TVneg)
+		for edge in self.edges:
+			i = self.model.xsection_idx[edge]
+			num[i,:]=1
+			denum[i,:]=1
 		self.W*=(num/denum)
+
+		self._default_update_H()
+		self._rescaleWH()
+
+		HHt = self.H@self.H.T
+		WHHt = self.W@HHt
+		num = self.GtX@self.H.T 
+		denum = self.GtG@WHHt
+		
+		denum += self._norm*(self.SR_lmbda*srgrad_pos)
+		num += self._norm*(self.SR_lmbda*srgrad_neg)
+		
+		for edge in self.edges:
+			v = self._edge_indices[edge]
+			num[v,:]=1
+			denum[v,:]=1
+		num[:self.n_background,:]=1
+		denum[:self.n_background,:]=1
+
+		self.W*=(num/(denum+self.eps))
 
 	def combinedTVSR_decomposition(self,
 		TV_lmbda=0.1,
@@ -33,8 +58,8 @@ class TV_SumRule:
 		SR_tolerance = 10.,
 		convergent_beam_correction = False,
 		convergent_factor_npoints = 1000,
-		constrain = "both",
-		delta =1e-3 ):
+		#constrain = "both",
+		delta =1e-2 ):
 		"""Decomposition method enforcing sum_rules and total variation minimization.
 
 
@@ -72,7 +97,7 @@ class TV_SumRule:
 
 			"""
 		self.delta=delta
-		self.constrain = constrain
+		self.constrain = "xs"#constrain
 		if SR_tolerance<=1:
 			self.SR_tolerance==0
 		else:
