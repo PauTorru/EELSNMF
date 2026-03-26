@@ -60,6 +60,7 @@ class Default_KL:
 
 					if rel_change<=self.tol and i>2:
 						print("Converged after {} iterations".format(i))
+						self._cp2np()
 						return
 					
 					pbar.set_postfix({"error":error,"relative change":rel_change})
