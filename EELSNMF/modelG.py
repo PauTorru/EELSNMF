@@ -129,7 +129,7 @@ class ModelG:
 	def build_G(self,
 		low_loss= None,
 		fine_structure_ranges = {},
-		backgrounds = None,
+		backgrounds = np.linspace(1,5,10),
 		model_type = "deltas",
 		xsection_type="Kohl",
 		**kwargs):
@@ -149,7 +149,7 @@ class ModelG:
 			 (Default value = {})
 		backgrounds : array
 			Exponents of the power-laws to be used for fitting the background.
-			 (Default value = None)
+			 (Default value = np.linspace(1,5,10))
 		model_type : one of EELSNMF.modelG.MODEL_REGISTRY
 			 (Default value = "deltas")
 		xsection_type : "Kohl" or "Zezhong"
@@ -174,7 +174,7 @@ class ModelG:
 
 
 		if backgrounds is None:
-			self.backgrounds = np.linspace(1,len(self.edges),len(self.edges))
+			self.backgrounds = np.array([0])
 		elif isinstance(backgrounds,int):
 			self.backgrounds = np.linspace(1,backgrounds,backgrounds)
 		elif hasattr(backgrounds,"__iter__"):

@@ -65,7 +65,7 @@ class Analysis:
 
 		data = self.G[:,self.model._edge_slices[edge]]@self.W[self.model._edge_slices[edge],component_id]
 
-		return hs.signals.Signal1D(data,axes=[self._eaxis_parameters])
+		return hs.signals.Signal1D(data,axes=[{k:v for k,v in self._eaxis_parameters.items() if k!="axis"}])
 
 
 	def quantify_components(self, method=None):
