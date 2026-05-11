@@ -130,11 +130,12 @@ class EML_Processing():
 
 		"""
 		self.core_loss_despiked = si.deepcopy()
+		fomd = fom(si.data+100)#(abs(dif)/si.data.sum(-1)[:,:,np.newaxis])
 		
 		if threshold == "auto":
 
 			#dif = np.diff(si.data)
-			fomd = fom(si.data+100)#(abs(dif)/si.data.sum(-1)[:,:,np.newaxis])
+			
 			#fom/=fom.sum(-1)[:,:,np.newaxis]
 
 			fomd = np.nan_to_num(fomd,nan=0.,posinf=0.,neginf=0.)

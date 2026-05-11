@@ -479,8 +479,8 @@ class ListOfSI():
 		os.mkdir(fname)
 		temp = self.unfolded_si.deepcopy()
 		self.unfolded_si.save(os.path.join(fname,"SI.hspy"))
-		if hasattr(self,"list"):
-			del self.list
+		if hasattr(self,"slist"):
+			del self.slist
 		del self.unfolded_si
 
 		with open(os.path.join(fname,"object.pkl"),"wb") as f:
