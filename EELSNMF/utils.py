@@ -399,7 +399,7 @@ class ListOfSI():
 		r,c = self.plot_structure
 		ax = plt.subplot(r,c,r*c)
 		for i in range(f.data.shape[0]):
-			plt.plot(self.eaxis,f.data[i],color = sns.color_palette(cc.glasbey,n).as_hex()[i])
+			plt.plot(self.energy_axis,f.data[i],color = sns.color_palette(cc.glasbey,n).as_hex()[i])
 
 
 	def find_plot_structure(self):
