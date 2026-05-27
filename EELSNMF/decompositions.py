@@ -157,7 +157,7 @@ class Decomposition(Default,
 		if self.rescale_G:
 			self.model._rescale()
 
-
+		self.analysis_description["decomposition"]["params"]=dict(kwargs)
 		method = getattr(self,decomposition_method)
 		method(**kwargs)
 
