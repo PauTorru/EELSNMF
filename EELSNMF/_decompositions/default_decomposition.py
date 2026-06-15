@@ -47,7 +47,8 @@ class Default:
 
 					if rel_change<=self.tol and i>2:
 						print("Converged after {} iterations".format(i))
-						self._cp2np()
+						if self.analysis_description["decomposition"]["use_cupy"]:
+							self._cp2np()
 
 						return
 					
