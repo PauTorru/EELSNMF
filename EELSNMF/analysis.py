@@ -1,4 +1,6 @@
-from .imports import *
+import hyperspy.api as hs
+import numpy as np
+import pandas as pd
 
 default_q_methods = {
     ("deltas", "default_decomposition"): {
@@ -93,6 +95,11 @@ class Analysis:
             columns=["component_{}".format(i) for i in range(self.W.shape[1])],
             index=[i.split("_")[0] for i in self.edges],
         )
+
+        try:
+            from IPython.display import display
+        except ImportError:
+            display = print
 
         try:
             display(self.component_quantification)

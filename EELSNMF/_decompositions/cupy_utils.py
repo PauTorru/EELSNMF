@@ -1,4 +1,6 @@
-from ..imports import *
+import numpy as np
+
+from .._cupy import cp
 
 # attr_list = ["GtX","GtG","X","W","G","H","W_init","W_fixed_bool","W_fixed_values","GW","X_over_GWH","GTsum1"]
 

@@ -1,3 +1,9 @@
+import gc
+
+import numpy as np
+from sklearn.decomposition._nmf import _initialize_nmf as initialize_nmf
+
+from ._cupy import CUPY_AVAILABLE, cp
 from ._decompositions.alternate_bg_elnes import Alternate_BG_ELNES
 from ._decompositions.cupy_utils import Cupy_Utils
 from ._decompositions.default_decomposition import Default
@@ -6,7 +12,6 @@ from ._decompositions.edgewise_utils import EdgeWiseUtils
 from ._decompositions.frobenius_edgetv import Frobenius_EdgeTV
 from ._decompositions.sumrule_regularization import LogSumRule_Regularization
 from ._decompositions.tv_sumrule_combined import TV_SumRule
-from .imports import *
 
 
 class Decomposition(

@@ -1,9 +1,12 @@
+import os
+import pickle as pkl
+
+import numpy as np
+
 from .analysis import Analysis
 from .decompositions import Decomposition
-from .imports import *
 from .modelG import ModelG
 from .plot import Plots
-from .utils import *
 
 
 def load(fname):
