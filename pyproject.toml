@@ -11,18 +11,18 @@ dynamic = ["version"]
 description = "A package for NMF analysis taylored to EELS data"
 readme = "README.md"
 authors = [{ name = "Pau Torruella", email = "pau.torruellabesa@epfl.ch" }]
-requires-python = ">=3.12"
+requires-python = ">=3.10"
 dependencies = [
     "colorcet>=3.2.1",
     "exspy>=0.3.2",
     "hyperspy>=2.4.0",
-    "matplotlib>=3.11.1",
-    "numpy>=2.4.6",
-    "pandas>=3.0.5",
+    "matplotlib>=3.10.9",
+    "numpy>=2.2.6",
+    "pandas>=2.3.3",
     "pyeelsmodel>=1.0.6",
     "rosettasciio>=0.14.0",
-    "scikit-learn>=1.9.0",
-    "scipy>=1.18.0",
+    "scikit-learn>=1.7.2",
+    "scipy>=1.15.3",
     "seaborn>=0.13.2",
     "tqdm>=4.69.0",
 ]
