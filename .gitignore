@@ -220,3 +220,6 @@ __marimo__/
 .streamlit/secrets.toml
 
 playground/
+
+# setuptools-scm generated version file
+EELSNMF/_version.py
