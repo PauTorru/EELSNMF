@@ -40,7 +40,7 @@ all = ["EELSNMF[cupy]", "EELSNMF[EML]", "EELSNMF[torch]"]
 file = "Licence.txt"
 
 [dependency-groups]
-dev = ["ruff>=0.15.22"]
+dev = ["pytest>=9.1.1", "ruff>=0.15.22"]
 
 [tool.ruff.lint]
 ignore = ["E711", "E712", "E741"]
