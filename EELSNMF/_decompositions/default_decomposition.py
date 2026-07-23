@@ -1,70 +1,63 @@
 from ..imports import *
 
+
 class Default:
-	
-	def _default_update_W(self):
-		WHHt = self.W@self.H@self.H.T
-		num = self.GtX@self.H.T 
-		denum = self. GtG@WHHt+self.eps
-		self.W*=num/denum
+    def _default_update_W(self):
+        WHHt = self.W @ self.H @ self.H.T
+        num = self.GtX @ self.H.T
+        denum = self.GtG @ WHHt + self.eps
+        self.W *= num / denum
 
-	def _default_update_H(self):
-		WH = self.W@self.H
-		num = self.W.T@self.GtX
-		denum = self.W.T@self.GtG@WH+self.eps
-		self.H*=num/denum
+    def _default_update_H(self):
+        WH = self.W @ self.H
+        num = self.W.T @ self.GtX
+        denum = self.W.T @ self.GtG @ WH + self.eps
+        self.H *= num / denum
 
+    def default_decomposition(self):
 
-	def default_decomposition(self):
-		
-		self.get_model = self._default_get_model
-		self._default_init_WH()	
+        self.get_model = self._default_get_model
+        self._default_init_WH()
 
-		self.create_temp_array("GtX",self.G.T@self.X)
-		self.create_temp_array("GtG",self.G.T@self.G)
+        self.create_temp_array("GtX", self.G.T @ self.X)
+        self.create_temp_array("GtG", self.G.T @ self.G)
 
-		self.enforce_dtype()
+        self.enforce_dtype()
 
-		if self.analysis_description["decomposition"]["use_cupy"]:
-			self._np2cp()
+        if self.analysis_description["decomposition"]["use_cupy"]:
+            self._np2cp()
 
-		error_0 = self.xp.abs(self.X-self.G@self.W@self.H).sum()
-		self.error_log=[float(error_0)]
+        error_0 = self.xp.abs(self.X - self.G @ self.W @ self.H).sum()
+        self.error_log = [float(error_0)]
 
-		with tqdm(range(self.max_iters),mininterval=5) as pbar:
-			for i in pbar:
+        with tqdm(range(self.max_iters), mininterval=5) as pbar:
+            for i in pbar:
+                self._default_update_W()
 
-				self._default_update_W()
+                self.apply_fix_W()
 
-				self.apply_fix_W()
+                self._default_update_H()
 
-				self._default_update_H()
-				
-				if i%self.error_skip_step==0:
-					error = self.xp.abs(self.X-self.G@self.W@self.H).sum()
-					self.error_log.append(float(error))
-					rel_change=self.xp.abs((error_0-error)/error_0)
+                if i % self.error_skip_step == 0:
+                    error = self.xp.abs(self.X - self.G @ self.W @ self.H).sum()
+                    self.error_log.append(float(error))
+                    rel_change = self.xp.abs((error_0 - error) / error_0)
 
-					if rel_change<=self.tol and i>2:
-						print("Converged after {} iterations".format(i))
-						if self.analysis_description["decomposition"]["use_cupy"]:
-							self._cp2np()
+                    if rel_change <= self.tol and i > 2:
+                        print("Converged after {} iterations".format(i))
+                        if self.analysis_description["decomposition"]["use_cupy"]:
+                            self._cp2np()
 
-						return
-					
-					pbar.set_postfix({"error":error,"relative change":rel_change})
-					error_0 = error
+                        return
 
-					
-				#shifts to prevent 0 locking
-				self.W = self.xp.maximum(self.W, self.eps)
-				self.H = self.xp.maximum(self.H, self.eps)
+                    pbar.set_postfix({"error": error, "relative change": rel_change})
+                    error_0 = error
 
+                # shifts to prevent 0 locking
+                self.W = self.xp.maximum(self.W, self.eps)
+                self.H = self.xp.maximum(self.H, self.eps)
 
-		self.delete_temp_arrays()
-		
-		if self.analysis_description["decomposition"]["use_cupy"]:
-			self._cp2np()
+        self.delete_temp_arrays()
 
-
-	
+        if self.analysis_description["decomposition"]["use_cupy"]:
+            self._cp2np()

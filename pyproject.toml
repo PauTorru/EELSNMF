@@ -1,35 +1,50 @@
 [build-system]
-requires = ["setuptools>=61.0"]
+requires = ["setuptools>=64", "wheel", "setuptools-scm>=8"]
 build-backend = "setuptools.build_meta"
+
+[tool.setuptools]
+py-modules = ["EELSNMF"]
 
 [project]
 name = "EELSNMF"
-version = "0.1.0"
+dynamic = ["version"]
 description = "A package for NMF analysis taylored to EELS data"
 readme = "README.md"
 authors = [{ name = "Pau Torruella", email = "pau.torruellabesa@epfl.ch" }]
-license = { file = "LICENSE.txt" }
+requires-python = ">=3.12"
 dependencies = [
-    "numpy",
-    "hyperspy[all]",
-    "exspy",
-    "rosettasciio",
-    "tqdm",
-    "matplotlib",
-    "scipy",
-    "seaborn",
-    "pandas",
-    "scikit-learn",
-    "colorcet",
-    "pyEELSMODEL",
-    "jupyter[all]"
+    "colorcet>=3.2.1",
+    "exspy>=0.3.2",
+    "hyperspy>=2.4.0",
+    "matplotlib>=3.11.1",
+    "numpy>=2.4.6",
+    "pandas>=3.0.5",
+    "pyeelsmodel>=1.0.6",
+    "rosettasciio>=0.14.0",
+    "scikit-learn>=1.9.0",
+    "scipy>=1.18.0",
+    "seaborn>=0.13.2",
+    "tqdm>=4.69.0",
 ]
 
 [project.optional-dependencies]
 gpu = ["cupy"]
 EML = ["whittaker-eilers"]
-torch = ["torch"] 
-all = ["cupy", "whittaker-eilers", "torch"]
+torch = ["torch"]
+all = ["EELSNMF[cupy]", "EELSNMF[EML]", "EELSNMF[torch]"]
 
 [project.urls]
 "Homepage" = "https://github.com/PauTorru/EELSNMF"
+
+[project.license]
+file = "Licence.txt"
+
+[dependency-groups]
+dev = ["ruff>=0.15.22"]
+
+[tool.ruff.lint]
+ignore = ["E711", "E712", "E741"]
+extend-select = ["I"]
+
+[tool.ruff.lint.per-file-ignores]
+"__init__.py" = ["F401", "F403"]

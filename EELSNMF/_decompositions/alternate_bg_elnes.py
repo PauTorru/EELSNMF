@@ -1,95 +1,96 @@
 from ..imports import *
 from ..utils import find_index
 
+
 class Alternate_BG_ELNES:
-	
-	def _alternate_update_W(self,idxs,GtX,GtG):
-		WHHt = self.W[idxs,:]@self.H@self.H.T
-		num = GtX@self.H.T 
-		denum = GtG@WHHt+self.eps
-		self.W[idxs,:]*=(num/denum)[idxs,:]
+    def _alternate_update_W(self, idxs, GtX, GtG):
+        WHHt = self.W[idxs, :] @ self.H @ self.H.T
+        num = GtX @ self.H.T
+        denum = GtG @ WHHt + self.eps
+        self.W[idxs, :] *= (num / denum)[idxs, :]
 
-	def _alternate_update_W2(self,idxs,GtX,GtG):
-		WHHt = self.W@self.H@self.H.T
-		num = GtX@self.H.T 
-		denum = GtG@WHHt+self.eps
-		self.W[idxs,:]*=(num/denum)[idxs,:]
+    def _alternate_update_W2(self, idxs, GtX, GtG):
+        WHHt = self.W @ self.H @ self.H.T
+        num = GtX @ self.H.T
+        denum = GtG @ WHHt + self.eps
+        self.W[idxs, :] *= (num / denum)[idxs, :]
 
-	def _alternate_update_H(self,idxs,GtX,GtG):
-		WH = self.W[:,:]@self.H # full update
-		num = self.W[:,:].T@GtX
-		denum = self.W[:,:].T@GtG@WH+self.eps
-		self.H*=num/denum
+    def _alternate_update_H(self, idxs, GtX, GtG):
+        WH = self.W[:, :] @ self.H  # full update
+        num = self.W[:, :].T @ GtX
+        denum = self.W[:, :].T @ GtG @ WH + self.eps
+        self.H *= num / denum
 
+    def alternate_decomposition(self, iters_bg=1, iters_elnes=1):
 
-	def alternate_decomposition(self,iters_bg=1,iters_elnes=1):
-		
-		self.get_model = self._default_get_model
-		self._default_init_WH()
-		last_xsection = max(self.model.xsection_idx.values())
-		idxs_bg = slice(None,last_xsection+1)
-		idxs_elnes = slice(last_xsection+1,None)
-		
-		if self.analysis_description["decomposition"]["use_cupy"]:
-			self._np2cp()
-		
-		energy_mask_elnes = self.xp.zeros_like(self.G[:,0]).astype("bool")
-		for r in self.fine_structure_ranges.values():
-			ii,ff = find_index(self.energy_axis,r)
-			energy_mask_elnes[ii:ff] = True
+        self.get_model = self._default_get_model
+        self._default_init_WH()
+        last_xsection = max(self.model.xsection_idx.values())
+        idxs_bg = slice(None, last_xsection + 1)
+        idxs_elnes = slice(last_xsection + 1, None)
 
-		energy_mask_bg = self.xp.logical_not(energy_mask_elnes)
-		
-		
-		#if not hasattr(self,"GtX") and not hasattr(self,"GtG"): # in case of full deconvolution they are already created
-		self.create_temp_array("GtG",self.G.T@self.G)
-		self.create_temp_array("GtX",self.G.T@self.X)
-		self.create_temp_array("GtX_bg",self.G[energy_mask_bg,idxs_bg].T@self.X[energy_mask_bg,:]) #####need to optimize to not use masks?????
-		self.create_temp_array("GtG_bg",self.G[energy_mask_bg,idxs_bg].T@self.G[energy_mask_bg,idxs_bg])
-		#self.GtX_elnes = self.G[energy_mask_elnes,idxs_elnes].T@self.X[energy_mask_elnes,:]
-		#self.GtG_elnes = self.G[energy_mask_elnes,idxs_elnes].T@self.G[energy_mask_elnes,idxs_elnes]
+        if self.analysis_description["decomposition"]["use_cupy"]:
+            self._np2cp()
 
-		self.enforce_dtype()
+        energy_mask_elnes = self.xp.zeros_like(self.G[:, 0]).astype("bool")
+        for r in self.fine_structure_ranges.values():
+            ii, ff = find_index(self.energy_axis, r)
+            energy_mask_elnes[ii:ff] = True
 
-		error_0 = float(self.xp.abs(self.X-self.G@self.W@self.H).sum())
-		self.error_log=[error_0]
+        energy_mask_bg = self.xp.logical_not(energy_mask_elnes)
 
-		with tqdm(range(self.max_iters),mininterval=5) as pbar:
-			for i in pbar:
+        # if not hasattr(self,"GtX") and not hasattr(self,"GtG"): # in case of full deconvolution they are already created
+        self.create_temp_array("GtG", self.G.T @ self.G)
+        self.create_temp_array("GtX", self.G.T @ self.X)
+        self.create_temp_array(
+            "GtX_bg", self.G[energy_mask_bg, idxs_bg].T @ self.X[energy_mask_bg, :]
+        )  #####need to optimize to not use masks?????
+        self.create_temp_array(
+            "GtG_bg",
+            self.G[energy_mask_bg, idxs_bg].T @ self.G[energy_mask_bg, idxs_bg],
+        )
+        # self.GtX_elnes = self.G[energy_mask_elnes,idxs_elnes].T@self.X[energy_mask_elnes,:]
+        # self.GtG_elnes = self.G[energy_mask_elnes,idxs_elnes].T@self.G[energy_mask_elnes,idxs_elnes]
 
-				for _ in range(iters_bg):
-					self._alternate_update_W(idxs_bg,self.GtX_bg,self.GtG_bg)
+        self.enforce_dtype()
 
-					self.apply_fix_W()
+        error_0 = float(self.xp.abs(self.X - self.G @ self.W @ self.H).sum())
+        self.error_log = [error_0]
 
-					#self._alternate_update_H(idxs_bg,self.GtX_bg,self.GtG_bg)
-				#self._alternate_update_H(idxs_elnes,self.GtX,self.GtG)
-				for _ in range(iters_elnes):
-					self._alternate_update_W2(idxs_elnes,self.GtX,self.GtG)
+        with tqdm(range(self.max_iters), mininterval=5) as pbar:
+            for i in pbar:
+                for _ in range(iters_bg):
+                    self._alternate_update_W(idxs_bg, self.GtX_bg, self.GtG_bg)
 
-					self.apply_fix_W()
+                    self.apply_fix_W()
 
-				self._alternate_update_H(idxs_elnes,self.GtX,self.GtG)
-				
-				if i%self.error_skip_step==0:
-					error = float(self.xp.abs(self.X-self.G@self.W@self.H).sum())
-					self.error_log.append(error)
-					rel_change=float(self.xp.abs((error_0-error)/error_0))
+                    # self._alternate_update_H(idxs_bg,self.GtX_bg,self.GtG_bg)
+                # self._alternate_update_H(idxs_elnes,self.GtX,self.GtG)
+                for _ in range(iters_elnes):
+                    self._alternate_update_W2(idxs_elnes, self.GtX, self.GtG)
 
-					if rel_change<=self.tol and i>2:
-						print("Converged after {} iterations".format(i))
-						self._cp2np()
-						return
-					
-					pbar.set_postfix({"error":error,"relative change":rel_change})
-					error_0 = error
+                    self.apply_fix_W()
 
-					
-				#shifts to prevent 0 locking
-				self.W = self.xp.maximum(self.W, self.eps)
-				self.H = self.xp.maximum(self.H, self.eps)
+                self._alternate_update_H(idxs_elnes, self.GtX, self.GtG)
 
-		self.delete_temp_arrays()
+                if i % self.error_skip_step == 0:
+                    error = float(self.xp.abs(self.X - self.G @ self.W @ self.H).sum())
+                    self.error_log.append(error)
+                    rel_change = float(self.xp.abs((error_0 - error) / error_0))
 
-		if self.analysis_description["decomposition"]["use_cupy"]:
-			self._cp2np()
+                    if rel_change <= self.tol and i > 2:
+                        print("Converged after {} iterations".format(i))
+                        self._cp2np()
+                        return
+
+                    pbar.set_postfix({"error": error, "relative change": rel_change})
+                    error_0 = error
+
+                # shifts to prevent 0 locking
+                self.W = self.xp.maximum(self.W, self.eps)
+                self.H = self.xp.maximum(self.H, self.eps)
+
+        self.delete_temp_arrays()
+
+        if self.analysis_description["decomposition"]["use_cupy"]:
+            self._cp2np()

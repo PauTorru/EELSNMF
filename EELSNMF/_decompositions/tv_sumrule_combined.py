@@ -1,199 +1,205 @@
 from ..imports import *
-from ..utils import psi, convergent_psi, find_index
+from ..utils import convergent_psi, find_index, psi
+
 
 class TV_SumRule:
+    def _TVSR_update_W(self, norm="mean"):
+        HHt = self.H @ self.H.T
+        WHHt = self.W @ HHt
+        num = self.GtX @ self.H.T
+        denum = self.GtG @ WHHt + self.eps
 
-	def _TVSR_update_W(self,norm="mean"):
-		HHt = self.H@self.H.T
-		WHHt = self.W@HHt
-		num = self.GtX@self.H.T 
-		denum = self.GtG@WHHt+self.eps
+        srgrad = self._LogSumRule_gradient()
+        srgrad_pos = self.xp.maximum(srgrad, 0)
+        srgrad_neg = self.xp.maximum(-srgrad, 0)
 
-		srgrad = self._LogSumRule_gradient()
-		srgrad_pos = self.xp.maximum(srgrad,0)
-		srgrad_neg = self.xp.maximum(-srgrad,0)
+        self._EdgeTV_gradient()
 
-		self._EdgeTV_gradient()
-		
-		if norm == "mean":
-			self._norm = self.xp.mean(num)
-		elif norm == "num":
-			self.create_temp_array("_norm", num)
-		elif norm == "none":
-			self._norm = self.xp.array(1.)
+        if norm == "mean":
+            self._norm = self.xp.mean(num)
+        elif norm == "num":
+            self.create_temp_array("_norm", num)
+        elif norm == "none":
+            self._norm = self.xp.array(1.0)
 
+        denum += self._norm * (self.TV_lmbda * self._TVpos + self.eps)
+        num += self._norm * (self.TV_lmbda * self._TVneg)
+        for edge in self.edges:
+            i = self.model.xsection_idx[edge]
+            num[i, :] = 1
+            denum[i, :] = 1
+        self.W *= num / denum
 
-		denum += self._norm*(self.TV_lmbda*self._TVpos+self.eps)
-		num += self._norm*(self.TV_lmbda*self._TVneg)
-		for edge in self.edges:
-			i = self.model.xsection_idx[edge]
-			num[i,:]=1
-			denum[i,:]=1
-		self.W*=(num/denum)
+        self._default_update_H()
+        self._rescaleWH()
 
-		self._default_update_H()
-		self._rescaleWH()
+        HHt = self.H @ self.H.T
+        WHHt = self.W @ HHt
+        num = self.GtX @ self.H.T
+        denum = self.GtG @ WHHt
 
-		HHt = self.H@self.H.T
-		WHHt = self.W@HHt
-		num = self.GtX@self.H.T 
-		denum = self.GtG@WHHt
-		
-		denum += self._norm*(self.SR_lmbda*srgrad_pos)
-		num += self._norm*(self.SR_lmbda*srgrad_neg)
-		
-		for edge in self.edges:
-			v = self._edge_indices[edge]
-			num[v,:]=1
-			denum[v,:]=1
-		num[:self.n_background,:]=1
-		denum[:self.n_background,:]=1
+        denum += self._norm * (self.SR_lmbda * srgrad_pos)
+        num += self._norm * (self.SR_lmbda * srgrad_neg)
 
-		self.W*=(num/(denum+self.eps))
+        for edge in self.edges:
+            v = self._edge_indices[edge]
+            num[v, :] = 1
+            denum[v, :] = 1
+        num[: self.n_background, :] = 1
+        denum[: self.n_background, :] = 1
 
-	def combinedTVSR_decomposition(self,
-		TV_lmbda=0.1,
-		SR_lmbda=0.1,
-		norm="mean",
-		SR_tolerance = 10.,
-		convergent_beam_correction = False,
-		convergent_factor_npoints = 1000,
-		#constrain = "both",
-		delta =1e-2 ):
-		"""Decomposition method enforcing sum_rules and total variation minimization.
+        self.W *= num / (denum + self.eps)
 
-
-		Parameters
-		----------
-		
-		TV_lmbda: float
-			regularization parameter: TV_lmbda*sum_edges(TV(edge))
-		
-		SR_lmbda: float
-			regularization parameter: SR_lmbda*(log(x))**2, x = sum( psi(e)*W_l,k)/B*W_xsection,k
-		
-		norm: {"mean","num","none"}
-			normalization applied to the regularization:
-				"num": lmbda = lmbda_0*G.T@X@H.T, element wise normalization updated each iteration
-				"mean": lmbda = lmbda_0*(G.T@X@H.T).mean(), global normalization updated each iteration
-				"none": no normalization
-		
-		SR_tolerance: float
-			SumRule penalty is not applied for edges for which log(x)<log(SR_tolerance)
-
-		convergent_beam_correction : bool
-			Wether to apply convergent beam formulation for the energy weight function of the sum rule, formula (24) in https://doi.org/10.1016/j.ultramic.2024.114084
-
-		convergent_factor_npoints: int
-			See EELSNMF.utils.convergent_psi
-
-		constrain: {"xs","elnes","both"}
-			Whether to apply the SumRule gradient only on the xsection terms of W, only on the ELNES terms or on both.
-			Default: "both"
-
-		delta: float
-			Constant for numerical stability in log((elnes+delta)/(xsection+delta))
+    def combinedTVSR_decomposition(
+        self,
+        TV_lmbda=0.1,
+        SR_lmbda=0.1,
+        norm="mean",
+        SR_tolerance=10.0,
+        convergent_beam_correction=False,
+        convergent_factor_npoints=1000,
+        # constrain = "both",
+        delta=1e-2,
+    ):
+        """Decomposition method enforcing sum_rules and total variation minimization.
 
 
-			"""
-		self.delta=delta
-		self.constrain = "xs"#constrain
-		if SR_tolerance<=1:
-			self.SR_tolerance==0
-		else:
-			self.SR_tolerance = self.xp.log(SR_tolerance)
-		self.TV_lmbda = TV_lmbda
+        Parameters
+        ----------
 
-		self._cbeam = convergent_beam_correction # for reporting purposes
-		if convergent_beam_correction:
-			self.psi = convergent_psi(self.energy_axis,
-				self.alpha,
-				self.beta,
-				kV=self.E0,
-				n_points=convergent_factor_npoints)
-		else:
-			self.psi = psi(self.energy_axis,
-				self.beta,
-				self.E0)
+        TV_lmbda: float
+                regularization parameter: TV_lmbda*sum_edges(TV(edge))
 
-		self.SR_lmbda = SR_lmbda
-		self.B ={}
-		for edge in self.edges:
-			self.B[edge]=self._calcB(edge) # generating dict with comprehension breaks cp2np
-		self._edge_psi = {}
-		for edge in self.edges:
-			ii,ff = find_index(self.energy_axis,self.fine_structure_ranges[edge])
-			self.create_temp_array("_"+edge+"_psi",self.psi[ii:ff])
-			self._edge_psi[edge] = "_"+edge+"_psi"
+        SR_lmbda: float
+                regularization parameter: SR_lmbda*(log(x))**2, x = sum( psi(e)*W_l,k)/B*W_xsection,k
 
+        norm: {"mean","num","none"}
+                normalization applied to the regularization:
+                        "num": lmbda = lmbda_0*G.T@X@H.T, element wise normalization updated each iteration
+                        "mean": lmbda = lmbda_0*(G.T@X@H.T).mean(), global normalization updated each iteration
+                        "none": no normalization
 
-		self.get_model = self._default_get_model
-		self._default_init_WH()
-		self._build_S()
-		self.enforce_dtype()
-		#self.WS_reciprocal_sum=np.zeros_like(self.W)
-		#self.W2 = self.W**2
-		#self._m += ["WS_reciprocal_sum","W2"]
+        SR_tolerance: float
+                SumRule penalty is not applied for edges for which log(x)<log(SR_tolerance)
 
-		self.create_temp_array("GtX",self.G.T@self.X)
-		self.create_temp_array("GtG",self.G.T@self.G)
-		self.create_temp_array("_TVpos", np.zeros_like(self.W))
-		self.create_temp_array("_TVneg", np.zeros_like(self.W))
-		
-		self._init_TV()
+        convergent_beam_correction : bool
+                Wether to apply convergent beam formulation for the energy weight function of the sum rule, formula (24) in https://doi.org/10.1016/j.ultramic.2024.114084
+
+        convergent_factor_npoints: int
+                See EELSNMF.utils.convergent_psi
+
+        constrain: {"xs","elnes","both"}
+                Whether to apply the SumRule gradient only on the xsection terms of W, only on the ELNES terms or on both.
+                Default: "both"
+
+        delta: float
+                Constant for numerical stability in log((elnes+delta)/(xsection+delta))
 
 
-		self.create_temp_array("_dJcdW", np.zeros_like(self.W))#sumrule gradient
+        """
+        self.delta = delta
+        self.constrain = "xs"  # constrain
+        if SR_tolerance <= 1:
+            self.SR_tolerance == 0
+        else:
+            self.SR_tolerance = self.xp.log(SR_tolerance)
+        self.TV_lmbda = TV_lmbda
 
-		if self.analysis_description["decomposition"]["use_cupy"]:
-			self._np2cp()
+        self._cbeam = convergent_beam_correction  # for reporting purposes
+        if convergent_beam_correction:
+            self.psi = convergent_psi(
+                self.energy_axis,
+                self.alpha,
+                self.beta,
+                kV=self.E0,
+                n_points=convergent_factor_npoints,
+            )
+        else:
+            self.psi = psi(self.energy_axis, self.beta, self.E0)
 
-		num = self.GtX@self.H.T 
-		if norm == "mean":
-			self._norm = self.xp.mean(num)
-		elif norm == "num":
-			self.create_temp_array("_norm", num)
-		elif norm == "none":
-			self._norm = self.xp.array(1.)
+        self.SR_lmbda = SR_lmbda
+        self.B = {}
+        for edge in self.edges:
+            self.B[edge] = self._calcB(
+                edge
+            )  # generating dict with comprehension breaks cp2np
+        self._edge_psi = {}
+        for edge in self.edges:
+            ii, ff = find_index(self.energy_axis, self.fine_structure_ranges[edge])
+            self.create_temp_array("_" + edge + "_psi", self.psi[ii:ff])
+            self._edge_psi[edge] = "_" + edge + "_psi"
 
-		error_0 = float(self.xp.linalg.norm(self.X-self.G@self.W@self.H)+self.TV_lmbda*self._EdgeTV()+self.SR_lmbda*self._LogSumRule_penalty())
-		self.error_log=[error_0]
+        self.get_model = self._default_get_model
+        self._default_init_WH()
+        self._build_S()
+        self.enforce_dtype()
+        # self.WS_reciprocal_sum=np.zeros_like(self.W)
+        # self.W2 = self.W**2
+        # self._m += ["WS_reciprocal_sum","W2"]
 
-		with tqdm(range(self.max_iters),mininterval=5) as pbar:
-			for i in pbar:
+        self.create_temp_array("GtX", self.G.T @ self.X)
+        self.create_temp_array("GtG", self.G.T @ self.G)
+        self.create_temp_array("_TVpos", np.zeros_like(self.W))
+        self.create_temp_array("_TVneg", np.zeros_like(self.W))
 
-				self._TVSR_update_W(norm=norm)
+        self._init_TV()
 
-				self.apply_fix_W()
+        self.create_temp_array("_dJcdW", np.zeros_like(self.W))  # sumrule gradient
 
-				self._rescaleWH()
+        if self.analysis_description["decomposition"]["use_cupy"]:
+            self._np2cp()
 
-				self._default_update_H()
-				
-				if i%self.error_skip_step==0:
-					error = float(self.xp.linalg.norm(self.X-self.G@self.W@self.H)+self.xp.linalg.norm(self._norm)*(self.TV_lmbda*self._EdgeTV()+self.SR_lmbda*self._LogSumRule_penalty()))
-					self.error_log.append(error)
-					rel_change=float(self.xp.abs((error_0-error)/error_0))
+        num = self.GtX @ self.H.T
+        if norm == "mean":
+            self._norm = self.xp.mean(num)
+        elif norm == "num":
+            self.create_temp_array("_norm", num)
+        elif norm == "none":
+            self._norm = self.xp.array(1.0)
 
-					if rel_change<=self.tol and i>2:
-						print("Converged after {} iterations".format(i))
-						if self.analysis_description["decomposition"]["use_cupy"]:
-							self._cp2np()
-						return
-					
-					pbar.set_postfix({"error":error,"relative change":rel_change})
-					error_0 = error
+        error_0 = float(
+            self.xp.linalg.norm(self.X - self.G @ self.W @ self.H)
+            + self.TV_lmbda * self._EdgeTV()
+            + self.SR_lmbda * self._LogSumRule_penalty()
+        )
+        self.error_log = [error_0]
 
-					
-				#shifts to prevent 0 locking
-				self.W = self.xp.maximum(self.W, self.eps)
-				self.H = self.xp.maximum(self.H, self.eps)
+        with tqdm(range(self.max_iters), mininterval=5) as pbar:
+            for i in pbar:
+                self._TVSR_update_W(norm=norm)
 
-		self.delete_temp_arrays()
+                self.apply_fix_W()
 
+                self._rescaleWH()
 
-		if self.analysis_description["decomposition"]["use_cupy"]:
-			self._cp2np()
+                self._default_update_H()
 
+                if i % self.error_skip_step == 0:
+                    error = float(
+                        self.xp.linalg.norm(self.X - self.G @ self.W @ self.H)
+                        + self.xp.linalg.norm(self._norm)
+                        * (
+                            self.TV_lmbda * self._EdgeTV()
+                            + self.SR_lmbda * self._LogSumRule_penalty()
+                        )
+                    )
+                    self.error_log.append(error)
+                    rel_change = float(self.xp.abs((error_0 - error) / error_0))
 
-	
+                    if rel_change <= self.tol and i > 2:
+                        print("Converged after {} iterations".format(i))
+                        if self.analysis_description["decomposition"]["use_cupy"]:
+                            self._cp2np()
+                        return
+
+                    pbar.set_postfix({"error": error, "relative change": rel_change})
+                    error_0 = error
+
+                # shifts to prevent 0 locking
+                self.W = self.xp.maximum(self.W, self.eps)
+                self.H = self.xp.maximum(self.H, self.eps)
+
+        self.delete_temp_arrays()
+
+        if self.analysis_description["decomposition"]["use_cupy"]:
+            self._cp2np()

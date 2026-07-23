@@ -10,8 +10,12 @@ import pandas as pd
 import pyEELSMODEL.api as em
 import pyEELSMODEL
 from pyEELSMODEL.components.linear_background import LinearBG
-from pyEELSMODEL.components.CLedge.zezhong_coreloss_edgecombined import ZezhongCoreLossEdgeCombined
-from pyEELSMODEL.components.CLedge.kohl_coreloss_edgecombined import KohlLossEdgeCombined
+from pyEELSMODEL.components.CLedge.zezhong_coreloss_edgecombined import (
+    ZezhongCoreLossEdgeCombined,
+)
+from pyEELSMODEL.components.CLedge.kohl_coreloss_edgecombined import (
+    KohlLossEdgeCombined,
+)
 from pyEELSMODEL.components.MScatter.mscatterfft import MscatterFFT
 from pyEELSMODEL.components.MScatter.mscatter import Mscatter
 from pyEELSMODEL.components.gdoslin import GDOSLin
@@ -23,12 +27,10 @@ import colorcet as cc
 import shutil
 
 try:
-	import cupy as cp
-	CUPY_AVAILABLE = True
+    import cupy as cp
+
+    CUPY_AVAILABLE = True
 except:
-	CUPY_AVAILABLE = False
-	cp = np
-	print("cupy not available")
-
-
-
+    CUPY_AVAILABLE = False
+    cp = np
+    print("cupy not available")
