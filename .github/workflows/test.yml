@@ -22,4 +22,4 @@ jobs:
 
       - name: Run tests
         run: |
-          uv run --extra test make test
+          uv run pytest
