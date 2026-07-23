@@ -15,7 +15,7 @@ While the original paper focuses on Energy-dispersive X-ray spectroscopy (EDX), 
 While the package is in development, you can install it directly from the source:
 
 ```bash
-pip install git+[https://github.com/PauTorru/EELSNMF.git](https://github.com/PauTorru/EELSNMF.git)
+pip install git+https://github.com/PauTorru/EELSNMF.git
 ```
 ### Installation with Optional Capabilities
 Specific experimental functionalities are available as "extras". You can install them by appending the flags in brackets:
