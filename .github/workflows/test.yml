@@ -1,0 +1,25 @@
+name: Test
+
+on: [push, pull_request]
+
+jobs:
+  test:
+    name: Test on Python ${{ matrix.python-version }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    strategy:
+      matrix:
+        python-version: ["3.10", "3.11", "3.12", "3.13"]
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v7
+
+      - name: Set up uv
+        uses: astral-sh/setup-uv@11f9893b081a58869d3b5fccaea48c9e9e46f990
+        with:
+          enable-cache: true
+          python-version: ${{ matrix.python-version }}
+
+      - name: Run tests
+        run: |
+          uv run pytest
