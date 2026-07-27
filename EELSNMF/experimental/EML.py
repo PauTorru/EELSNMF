@@ -1,13 +1,20 @@
-from ..imports import *
-from ..utils import moving_average, norm
+import os
+import pickle as pkl
 
-try:
-    from whittaker_eilers import WhittakerSmoother
-except ImportError:
-    raise ImportError(
-        "WhittakerSmoother is required for EML processing. "
-        "Please install it using: pip install 'EELSNMF[EML]'"
-    )
+import hyperspy.api as hs
+import matplotlib.pyplot as plt
+import numpy as np
+import pyEELSMODEL.api as em
+from pyEELSMODEL.components.CLedge.kohl_coreloss_edgecombined import (
+    KohlLossEdgeCombined,
+)
+from pyEELSMODEL.components.gdoslin import GDOSLin
+from pyEELSMODEL.components.linear_background import LinearBG
+from pyEELSMODEL.components.MScatter.mscatterfft import MscatterFFT
+from pyEELSMODEL.fitters.linear_fitter import LinearFitter
+from tqdm import tqdm
+
+from ..utils import moving_average, norm
 
 
 def we_smooth(array, lmbda=1e2, order=2):
@@ -31,6 +38,14 @@ def we_smooth(array, lmbda=1e2, order=2):
             The smoothed array
 
     """
+    try:
+        from whittaker_eilers import WhittakerSmoother
+    except ImportError:
+        raise ImportError(
+            "WhittakerSmoother is required for EML processing. "
+            "Please install it using: pip install 'EELSNMF[EML]'"
+        )
+
     whittaker_smoother = WhittakerSmoother(
         lmbda=lmbda, order=order, data_length=array.shape[-1]
     )
@@ -354,6 +369,13 @@ class EML_Processing:
 
         """
         if mask is None:
+            try:
+                import skimage.filters
+            except ImportError:
+                raise ImportError(
+                    "scikit-image is required for Otsu thresholding in average_spectrum_excluding_vacuum. "
+                    "Please install scikit-image."
+                )
             mask = signal.data.sum(-1) > skimage.filters.threshold_otsu(
                 signal.data.sum(-1)
             )

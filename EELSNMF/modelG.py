@@ -1,5 +1,16 @@
-from .imports import *
-from .utils import *
+import numpy as np
+import pyEELSMODEL.api as em
+import scipy as sc
+from pyEELSMODEL.components.CLedge.kohl_coreloss_edgecombined import (
+    KohlLossEdgeCombined,
+)
+from pyEELSMODEL.components.CLedge.zezhong_coreloss_edgecombined import (
+    ZezhongCoreLossEdgeCombined,
+)
+from pyEELSMODEL.components.linear_background import LinearBG
+from pyEELSMODEL.fitters.linear_fitter import LinearFitter
+
+from .utils import find_index
 
 
 def convolve(a, b):
@@ -283,17 +294,17 @@ class ConvolvedSingle(BaseModel):
     """Model where the ELNES for each element is modelled a series of dirac deltas (thereby making it completely free)."""
 
     def __init__(self, parent, low_loss_spectrum):
-        super.__init__()
+        super().__init__()
         self.parent = parent
         assert len(low_loss_spectrum.data.shape) == 1  # single spectrum, not SI
         self.llspectrum_data = low_loss_spectrum.data
-        self.llaxis = self.low_loss_spectrum.axes_manager[-1].axis
+        self.llaxis = low_loss_spectrum.axes_manager[-1].axis
 
         # convolution expects same spectral shape
-        if self.llspectrum_data.shape[-1] > G.shape[0]:
-            self.llspectrum_data = self.llspectrum_data[: G.shape[0]]
-        elif self.llspectrum_data.shape[-1] < G.shape[0]:
-            missing = G.shape[0] - self.llspectrum_data.shape[-1]
+        if self.llspectrum_data.shape[-1] > self.parent._G0.shape[0]:
+            self.llspectrum_data = self.llspectrum_data[: self.parent._G0.shape[0]]
+        elif self.llspectrum_data.shape[-1] < self.parent._G0.shape[0]:
+            missing = self.parent._G0.shape[0] - self.llspectrum_data.shape[-1]
             self.llspectrum_data = np.pad(
                 self.llspectrum_data,
                 (0, missing),
@@ -306,7 +317,7 @@ class ConvolvedSingle(BaseModel):
         G0_convolved = self.parent._G0.copy()
 
         for i in range(
-            self.n_background, G0_convolved.shape[1]
+            self.parent.n_background, G0_convolved.shape[1]
         ):  # convolve xsections, not backgrounds
             G0_convolved[:, i] = convolve(self.parent._G0[:, i], self.llspectrum_data)
 
@@ -325,10 +336,10 @@ class ConvolvedSingle(BaseModel):
         freeGs = []
         freeGs_sizes = []
         o = self.llspectrum_data.argmax()
-        for k, v in self.fine_structure_ranges.items():
-            ii, ff = self.ax.value2index(v)
+        for k, v in self.parent.fine_structure_ranges.items():
+            ii, ff = find_index(self.parent.energy_axis, v)
             l = ff - ii + 1  # this overlaps with cropped xsection. problematic?
-            freeG = np.zeros((self.energy_size, l))
+            freeG = np.zeros((self.parent.energy_size, l))
             freeGs_sizes.append(l)
             for r, i in enumerate(range(ii, ff + 1)):
                 # put the lldata into freeG so that o coincides with i
@@ -347,9 +358,11 @@ class ConvolvedSingle(BaseModel):
                     freeG[:, r] = self.llspectrum_data / self.llspectrum_data.sum()
             freeGs.append(freeG)
 
-        self.G = np.concatenate([G0_convolved] + freeGs, axis=1).astype(self.dtype)
+        self.G = np.concatenate([G0_convolved] + freeGs, axis=1).astype(
+            self.parent.dtype
+        )
         self.Gf_sizes = freeGs_sizes
-        self.Gf = np.concatenate(freeGs, axis=1).astype(self.dtype)
+        self.Gf = np.concatenate(freeGs, axis=1).astype(self.parent.dtype)
         self._G_structure = [self.parent._G0.shape[1]] + self.Gf_sizes
         self._edge_slices = {
             k: np.s_[i:f]

@@ -1,4 +1,6 @@
-from ..imports import *
+import numpy as np
+
+from .._cupy import CUPY_AVAILABLE, cp
 
 # attr_list = ["GtX","GtG","X","W","G","H","W_init","W_fixed_bool","W_fixed_values","GW","X_over_GWH","GTsum1"]
 
@@ -32,7 +34,7 @@ class Cupy_Utils:
         self.xp = np
         for attr in self._m:
             value = getattr(self, attr, None)
-            if value is not None:
+            if value is not None and hasattr(value, "get"):
                 setattr(self, attr, value.get())
         clear_gpu_cache()
 
@@ -54,6 +56,6 @@ class Cupy_Utils:
 
 
 def clear_gpu_cache():
-
-    cp.get_default_memory_pool().free_all_blocks()
-    cp.get_default_pinned_memory_pool().free_all_blocks()
+    if CUPY_AVAILABLE and hasattr(cp, "get_default_memory_pool"):
+        cp.get_default_memory_pool().free_all_blocks()
+        cp.get_default_pinned_memory_pool().free_all_blocks()

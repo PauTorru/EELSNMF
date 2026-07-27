@@ -1,5 +1,7 @@
-from .imports import *
-from .utils import *
+import matplotlib as mpl
+import matplotlib.pyplot as plt
+
+from .utils import find_2factors, find_index, norm
 
 
 class Plots:

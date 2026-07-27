@@ -1,4 +1,4 @@
-from ..imports import *
+from tqdm import tqdm
 
 
 class Default:

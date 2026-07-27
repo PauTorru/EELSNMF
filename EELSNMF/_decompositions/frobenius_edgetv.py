@@ -1,4 +1,5 @@
-from ..imports import *
+import numpy as np
+from tqdm import tqdm
 
 
 class Frobenius_EdgeTV:

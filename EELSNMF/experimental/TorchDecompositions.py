@@ -1,15 +1,12 @@
-# try:
-#     from torch
-# except ImportError:
-#     raise ImportError(
-#         "torch is required for TorchDecompositions "
-#         "Please install it using: pip install 'EELSNMF[torch]'"
-#     )
-import torch
-import torch.nn as nn
-import torch.optim as optim
-
-from ..imports import *
+try:
+    import torch
+    import torch.nn as nn
+    import torch.optim as optim
+except ImportError:
+    raise ImportError(
+        "torch is required for TorchDecompositions "
+        "Please install it using: pip install 'EELSNMF[torch]'"
+    )
 
 
 def torch_deco(
