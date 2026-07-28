@@ -166,15 +166,19 @@ class ModelG:
 
         """
 
+        self.ll = low_loss
         if low_loss is not None:
-            self.ll = low_loss
             self.Xll = low_loss.data.reshape(
                 self.X.data.shape
             )  # low_loss needs to have the same shape (spectrally too) as core_loss
-        else:
-            self.ll = None
 
-        self.fine_structure_ranges = fine_structure_ranges
+        # Intersect the ranges with the energy axis to avoid NaN
+        self.fine_structure_ranges = {
+            k: (l, r)
+            for k, (v0, v1) in fine_structure_ranges.items()
+            if (l := max(v0, np.min(self.energy_axis)))
+            < (r := min(v1, np.max(self.energy_axis)))
+        }
         self.edges = list(self.fine_structure_ranges.keys())
 
         if backgrounds is None:
