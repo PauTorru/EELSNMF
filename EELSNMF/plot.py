@@ -97,6 +97,14 @@ class Plots:
             plt.colorbar()
         plt.tight_layout()
 
+    def plot_average(self):
+        """Plot mean spectral signal"""
+        plt.figure("Model")
+        plt.clf()
+        plt.plot(self.energy_axis, self.X.mean(1), label="Data")
+        plt.legend()
+        plt.tight_layout()
+
     def plot_average_model(self):
         """Plot mean spectral signal and mean model"""
         plt.figure("Model")
