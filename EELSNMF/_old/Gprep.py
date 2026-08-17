@@ -87,7 +87,7 @@ def build_G(self):
                 fast=True,
             )
         else:
-            print('cross section type "{}" does not exist'.format(self.xsection_type))
+            print(f'cross section type "{self.xsection_type}" does not exist')
         xs.append(x)
     ##############################
     ############################## Create pyEELSMODEL background
@@ -252,9 +252,7 @@ def _prepare_full_convolution_G(self, G0):
         self.ll_data_flat.shape[1]
     ):  # we'll make G at each position then calculate GTX[l,p] and GTG[l,l,p] and store that
         if p % int(self.ll_data_flat.shape[1] // 10) == 0:
-            print(
-                "Preparing full convolution {}/{}".format(p, self.ll_data_flat.shape[1])
-            )
+            print(f"Preparing full convolution {p}/{self.ll_data_flat.shape[1]}")
         self._ll_id = p
         G = self._prepare_single_spectrum_convolution_G(G0)
 

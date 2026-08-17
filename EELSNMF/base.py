@@ -169,7 +169,6 @@ class EELSNMF(ModelG, Decomposition, Plots, Analysis):
                 val = getattr(self, m)
                 if val is not None and hasattr(val, "astype"):
                     setattr(self, m, val.astype(dtype))
-        return
 
     def save(self, fname, path=None, save_hspy_objects=False, overwrite=False):
         """Save the EELSNMF object. This method uses pickle.

@@ -80,7 +80,7 @@ class Alternate_BG_ELNES:
                     rel_change = float(self.xp.abs((error_0 - error) / error_0))
 
                     if rel_change <= self.tol and i > 2:
-                        print("Converged after {} iterations".format(i))
+                        print(f"Converged after {i} iterations")
                         self._cp2np()
                         return
 

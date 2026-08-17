@@ -127,14 +127,12 @@ def decomposition_SumRule(self, n_comps, convergent_probe_correction=False):
         self.error_log.append(error)
 
         if abs((error_0 - error) / error_0) <= self.tol and i > 2:
-            print("Converged after {} iterations".format(i))
+            print(f"Converged after {i} iterations")
             break
 
         if i % self.print_error_every == 0:
             print(
-                "Error = {} after {} iterations. Relative change = {}".format(
-                    error, i, abs((error_0 - error) / error_0)
-                )
+                f"Error = {error} after {i} iterations. Relative change = {abs((error_0 - error) / error_0)}"
             )
         error_0 = error
 
@@ -200,8 +198,6 @@ def adapt_G_SumRule(self, convergent_probe_correction=False, n_points=1000):
     self.sum_rules.Gf = Gf
 
     self.sum_rules.W, self.sum_rules.H = init_XWH_sumrules(self)
-
-    return
 
 
 def init_XWH_sumrules(self):

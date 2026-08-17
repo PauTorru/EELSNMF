@@ -44,7 +44,7 @@ class Default:
                     rel_change = self.xp.abs((error_0 - error) / error_0)
 
                     if rel_change <= self.tol and i > 2:
-                        print("Converged after {} iterations".format(i))
+                        print(f"Converged after {i} iterations")
                         if self.analysis_description["decomposition"]["use_cupy"]:
                             self._cp2np()
 

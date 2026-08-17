@@ -190,7 +190,7 @@ def match_axis(s, new_axis):
         yf = s.data
         xf = s.axes_manager[-1].axis
 
-        out = np.zeros((new_axis.shape[0]))
+        out = np.zeros(new_axis.shape[0])
 
         interp = sc.interpolate.interp1d(xf, yf, kind="cubic")
         out[:] = interp(new_axis)
@@ -334,7 +334,6 @@ class ListOfSI:
         self.unfolded_si.axes_manager[-1].scale = (
             self.energy_axis[1] - self.energy_axis[0]
         )
-        return
 
     @property
     def unfolded_data(self):
@@ -459,7 +458,6 @@ class ListOfSI:
                     "failed to find good plot_structure, which should never happen"
                 )
         self.plot_structure = (rows, cols)
-        return
 
     def plot_array(self, array, extra_row=False, vmin=None, vmax=None, cmap=None):
         """
@@ -517,9 +515,7 @@ class ListOfSI:
         """
         if os.path.exists(fname) and overwrite:
             sure = input(
-                "About to completely delete current {}, are you sure? (y,n)".format(
-                    fname
-                )
+                f"About to completely delete current {fname}, are you sure? (y,n)"
             )
             if sure.lower() == "y":
                 shutil.rmtree(fname)
@@ -535,7 +531,6 @@ class ListOfSI:
             pkl.dump(self, f)
 
         self.unfolded_si = temp
-        return
 
 
 def load_ListOfSI(path):
