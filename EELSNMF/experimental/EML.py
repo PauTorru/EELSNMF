@@ -112,7 +112,7 @@ class EML_Processing:
             for i in self.deconvolved_edge:
                 i.save(
                     os.path.join(
-                        dirname, "edge_deconvolved_{}.hspy".format(i.process_save_label)
+                        dirname, f"edge_deconvolved_{i.process_save_label}.hspy"
                     ),
                     overwrite=True,
                 )
@@ -127,9 +127,7 @@ class EML_Processing:
                 self.average_spectrum_excluding_vacuum_signal.save(
                     os.path.join(
                         dirname,
-                        "average_spectrum_no_vacuum{}.hspy".format(
-                            i.process_save_label
-                        ),
+                        f"average_spectrum_no_vacuum{i.process_save_label}.hspy",
                     ),
                     overwrite=True,
                 )
@@ -498,7 +496,7 @@ def long_despike(process, dif_lim=0.5, count_lim=10):
         process.despike(process.core_loss_despiked)
         dif = t0 - process.threshold
         t0 = process.threshold
-        print("# Despikes : {}".format(count))
+        print(f"# Despikes : {count}")
 
 
 def check_element(comp):
@@ -601,7 +599,6 @@ def kill_channel_range(signal, coord_range):
         )
 
         signal.data[x, y, e_intp_i : e_intp_f + 1] = I_intp
-    return
 
 
 def kill_channels_from_mask(mask, signal):
@@ -655,7 +652,6 @@ def kill_channels_from_mask(mask, signal):
     for c2 in tqdm(list(coords2_set)):
         # print(c2)
         kill_channel_range(signal, c2)
-    return
 
 
 def expand_mask(mask):

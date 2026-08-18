@@ -44,8 +44,6 @@ class Frobenius_EdgeTV:
             self._TVpos[v, :] = getattr(self, self._A_pos[edge]) @ w
             self._TVneg[v, :] = getattr(self, self._A_neg[edge]) @ w
 
-        return
-
     def _init_TV(self):
         self._A_pos = {}
         self._A_neg = {}
@@ -116,7 +114,7 @@ class Frobenius_EdgeTV:
                     rel_change = float(self.xp.abs((error_0 - error) / error_0))
 
                     if rel_change <= self.tol and i > 2:
-                        print("Converged after {} iterations".format(i))
+                        print(f"Converged after {i} iterations")
                         if self.analysis_description["decomposition"]["use_cupy"]:
                             self._cp2np()
                         return

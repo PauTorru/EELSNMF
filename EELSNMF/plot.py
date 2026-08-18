@@ -14,9 +14,7 @@ class Plots:
         plt.figure("Factors")
         plt.clf()
         for i in range(self.n_components):
-            plt.plot(
-                self.energy_axis, (self.G @ self.W).T[i], label="Component {}".format(i)
-            )
+            plt.plot(self.energy_axis, (self.G @ self.W).T[i], label=f"Component {i}")
         plt.legend()
         plt.tight_layout()
 
@@ -36,7 +34,7 @@ class Plots:
             plt.imshow(self.loadings[i])
             ax.set_xticks([])
             ax.set_yticks([])
-            ax.set_title("Loading {}".format(i))
+            ax.set_title(f"Loading {i}")
         plt.tight_layout()
 
     def plot_edges(self, normalize=False):

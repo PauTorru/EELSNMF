@@ -56,9 +56,7 @@ def load(fname):
             return s, None
     else:
         raise Exception(
-            "File should contain either one (coreloss) or two (coreloss + lowloss) SIs. Insted there are {}".format(
-                len(s)
-            )
+            f"File should contain either one (coreloss) or two (coreloss + lowloss) SIs. Insted there are {len(s)}"
         )
 
 
@@ -313,14 +311,12 @@ class EELSNMF:
             self.error_log.append(error)
 
             if abs((error_0 - error) / error_0) <= self.tol and i > 2:
-                print("Converged after {} iterations".format(i))
+                print(f"Converged after {i} iterations")
                 return
 
             if i % self.print_error_every == 0:
                 print(
-                    "Error = {} after {} iterations. Relative change = {}".format(
-                        error, i, abs((error_0 - error) / error_0)
-                    )
+                    f"Error = {error} after {i} iterations. Relative change = {abs((error_0 - error) / error_0)}"
                 )
             error_0 = error
 
@@ -426,14 +422,12 @@ class EELSNMF:
             self.error_log.append(error)
 
             if abs((error_0 - error) / error_0) <= self.tol and i > 2:
-                print("Converged after {} iterations".format(i))
+                print(f"Converged after {i} iterations")
                 break
 
             if i % self.print_error_every == 0:
                 print(
-                    "Error = {} after {} iterations. Relative change = {}".format(
-                        error, i, abs((error_0 - error) / error_0)
-                    )
+                    f"Error = {error} after {i} iterations. Relative change = {abs((error_0 - error) / error_0)}"
                 )
             error_0 = error
 
@@ -454,9 +448,7 @@ class EELSNMF:
         plt.figure("Factors")
         plt.clf()
         for i in range(self.n_comps):
-            plt.plot(
-                self.energy_axis, (self.G @ self.W).T[i], label="Component {}".format(i)
-            )
+            plt.plot(self.energy_axis, (self.G @ self.W).T[i], label=f"Component {i}")
         plt.legend()
 
     def calculate_loadings(self):
@@ -474,7 +466,7 @@ class EELSNMF:
             plt.imshow(self.loadings[i])
             ax.set_xticks([])
             ax.set_yticks([])
-            ax.set_title("Loading {}".format(i))
+            ax.set_title(f"Loading {i}")
         plt.tight_layout()
 
     def get_edge_from_component(self, component_id, edge):
@@ -510,7 +502,6 @@ class EELSNMF:
         self.cl = temp
         self.ll = temp_ll
         self.ax = self.cl.axes_manager[-1]
-        return
 
     def quantify_components(self):
         simplified_W = np.zeros((len(self.edges), self.W.shape[1]))
@@ -523,7 +514,7 @@ class EELSNMF:
 
         self.quantification = pd.DataFrame(
             simplified_W,
-            columns=["component_{}".format(i) for i in range(self.W.shape[1])],
+            columns=[f"component_{i}" for i in range(self.W.shape[1])],
             index=[i.split("_")[0] for i in self.xsection_idx.keys()],
         )
         try:
@@ -570,7 +561,7 @@ class EELSNMF:
 
             if i % 50 == 0:
                 print(
-                    "Error calculation not implemented. iters = {}".format(i)
+                    f"Error calculation not implemented. iters = {i}"
                 )  # .format(error,i))
             # error_0 = error
 
@@ -615,7 +606,7 @@ class EELSNMF:
 
             if i % 50 == 0:
                 print(
-                    "Error calculation not implemented. iters = {}".format(i)
+                    f"Error calculation not implemented. iters = {i}"
                 )  # .format(error,i))
             # error_0 = error
 

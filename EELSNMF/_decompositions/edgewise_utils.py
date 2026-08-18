@@ -14,8 +14,6 @@ class EdgeWiseUtils:
                 0
             ]  # np.roll(np.where(mask)[0],-1) #moves xsection to the end for TV
 
-        return
-
     def _rescaleWH(self):
         # k_norm = self.xp.linalg.norm(self.W,axis=0,keepdims=True) + self.eps
         k_norm = self.H.shape[1] / self.H.sum(1, keepdims=True) + self.eps

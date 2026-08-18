@@ -50,7 +50,6 @@ class BaseModel:
 
     def __init__(self):
         self._G_rescaled_to1 = False
-        pass
 
     def __getstate__(self):
         state = self.__dict__.copy()
@@ -80,8 +79,6 @@ class BaseModel:
 
         # self._G_rescaled_to1 = True
 
-        return
-
     def _undo_rescale(self):
 
         if self._G_rescaled_to1:
@@ -101,8 +98,6 @@ class BaseModel:
         # 		self.parent.W[idx,:]/=self._edge_scales[edge]
 
         # self._G_rescaled_to1 = False
-
-        return
 
     # @property
     # def G(self):
@@ -229,9 +224,7 @@ class ModelG:
                     fast=True,
                 )
             else:
-                print(
-                    'cross section type "{}" does not exist'.format(self.xsection_type)
-                )
+                print(f'cross section type "{self.xsection_type}" does not exist')
             xs.append(x)
 
         self.xsections = np.array(xs)

@@ -84,7 +84,7 @@ class Analysis:
         """
 
         if method is None:
-            method = getattr(self, "component_standard_q")
+            method = self.component_standard_q
         elif isinstance(method, str):
             method = getattr(self, method)
 
@@ -92,7 +92,7 @@ class Analysis:
 
         self.component_quantification = pd.DataFrame(
             np.round(array_component_quantification, 2),
-            columns=["component_{}".format(i) for i in range(self.W.shape[1])],
+            columns=[f"component_{i}" for i in range(self.W.shape[1])],
             index=[i.split("_")[0] for i in self.edges],
         )
 
@@ -175,7 +175,7 @@ class Analysis:
         """
 
         if method is None:
-            method = getattr(self, "spatial_standard_q")
+            method = self.spatial_standard_q
 
         array_spatial_quantification = method()
 
