@@ -40,7 +40,7 @@ class Decomposition(
     def decomposition(
         self,
         n_components,
-        max_iters=100,
+        max_iters=2000,
         tol=1e-6,
         use_cupy=False,
         init_nmf=None,

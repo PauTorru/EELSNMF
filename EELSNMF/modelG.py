@@ -129,7 +129,7 @@ class ModelG:
         self,
         low_loss=None,
         fine_structure_ranges={},
-        backgrounds=np.linspace(1, 5, 10),
+        backgrounds=np.linspace(1, 5, 20),
         model_type="deltas",
         xsection_type="Kohl",
         **kwargs,
