@@ -7,14 +7,25 @@ from .utils import find_2factors, find_index, norm
 class Plots:
     """Mixin class for all plot functionalities of EELSNMF object."""
 
-    def plot_factors(self):
+    def plot_factors(self, normalize=False):
         """
         Plot EELSNMF factors spectral (mathematically the columns of G@W)
         """
         plt.figure("Factors")
         plt.clf()
         for i in range(self.n_components):
-            plt.plot(self.energy_axis, (self.G @ self.W).T[i], label=f"Component {i}")
+            if normalize:
+                plt.plot(
+                    self.energy_axis,
+                    norm((self.G @ self.W).T[i]),
+                    label=f"Component {i}",
+                )
+            else:
+                plt.plot(
+                    self.energy_axis,
+                    (self.G @ self.W).T[i],
+                    label=f"Component {i}",
+                )
         plt.legend()
         plt.tight_layout()
 
