@@ -8,9 +8,112 @@ from pyEELSMODEL.components.CLedge.zezhong_coreloss_edgecombined import (
     ZezhongCoreLossEdgeCombined,
 )
 from pyEELSMODEL.components.linear_background import LinearBG
+from pyEELSMODEL.core.component import Component
+from pyEELSMODEL.core.parameter import Parameter
 from pyEELSMODEL.fitters.linear_fitter import LinearFitter
 
 from .utils import find_index
+
+
+class TaylorBG(Component):
+    """
+    Taylor expansion background model anchored at r_max:
+    phi_k(E) = (1/k!) * E^(-r_max) * (ln(E))^k
+    for k = 0, 1, ..., order - 1 (total order terms)
+    """
+
+    def __init__(self, specshape, r_max, order):
+        super().__init__(specshape)
+        self.r_max = r_max
+        self.order = order
+
+        for k in range(self.order):
+            pname = f"a{k}"
+            p = Parameter(pname, 1.0, True)
+            p.setboundaries(0, np.inf)
+            p.setlinear(True)
+            self._addparameter(p)
+
+        self._setcanconvolute(False)
+        self._setshifter(False)
+        self._setname(f"Taylor background (r_max={self.r_max}, terms={self.order})")
+
+    def calculate(self):
+        if self.suppress:
+            self.data[:] = 0
+            self.setunchanged()
+            return
+        changes = any(param.ischanged() for param in self.parameters)
+        if changes:
+            Alist = [param.getvalue() for param in self.parameters]
+            self.data = self.taylor_background(Alist)
+        self.setunchanged()
+
+    def taylor_background(self, Alist):
+        E = self.energy_axis
+        mask = E > 0
+        ln_E = np.log(np.maximum(E, 1e-12))
+        base = E ** (-self.r_max)
+
+        signal = np.zeros(E.size)
+        term = base.copy()
+        for k in range(len(Alist)):
+            if k > 0:
+                term = term * ln_E / k
+            signal += mask * (Alist[k] * term)
+        return signal
+
+
+class ChebyshevBG(Component):
+    """
+    Chebyshev / Minimax background model using non-negative interpolation
+    sampled at Chebyshev nodes of 1st kind on [r_min, r_max]:
+    phi_k(E) = E^(-r_k*) where r_k* = (r_min + r_max)/2 + (r_max - r_min)/2 * cos((2k-1)pi / 2N)
+    for k = 1, ..., order (total order terms)
+    """
+
+    def __init__(self, specshape, r_min, r_max, order):
+        super().__init__(specshape)
+        self.r_min = r_min
+        self.r_max = r_max
+        self.order = order
+
+        k = np.arange(1, self.order + 1)
+        self.r_nodes = 0.5 * (self.r_min + self.r_max) + 0.5 * (
+            self.r_max - self.r_min
+        ) * np.cos((2 * k - 1) * np.pi / (2 * self.order))
+
+        for i in range(self.order):
+            pname = f"a{i}"
+            p = Parameter(pname, 1.0, True)
+            p.setboundaries(0, np.inf)
+            p.setlinear(True)
+            self._addparameter(p)
+
+        self._setcanconvolute(False)
+        self._setshifter(False)
+        self._setname(
+            f"Chebyshev background (terms={self.order}, r=[{self.r_min}, {self.r_max}])"
+        )
+
+    def calculate(self):
+        if self.suppress:
+            self.data[:] = 0
+            self.setunchanged()
+            return
+        changes = any(param.ischanged() for param in self.parameters)
+        if changes:
+            Alist = [param.getvalue() for param in self.parameters]
+            self.data = self.chebyshev_background(Alist)
+        self.setunchanged()
+
+    def chebyshev_background(self, Alist):
+        E = self.energy_axis
+        mask = E > 0
+        signal = np.zeros(E.size)
+        for i in range(len(Alist)):
+            signal += mask * (Alist[i] * (E ** (-self.r_nodes[i])))
+        return signal
 
 
 def convolve(a, b):
@@ -129,7 +232,11 @@ class ModelG:
         self,
         low_loss=None,
         fine_structure_ranges={},
-        backgrounds=np.linspace(1, 5, 10),
+        bg_method="grid",
+        r_min=1.0,
+        r_max=8.0,
+        order=10,
+        backgrounds=None,
         model_type="deltas",
         xsection_type="Kohl",
         **kwargs,
@@ -147,9 +254,21 @@ class ModelG:
         fine_structure_ranges : dict
                 Dictionary of ELNES ranges for each edge. E.g. {"O_K":(525.,540.),"Fe_L":(705.,750.)}
                  (Default value = {})
-        backgrounds : array
-                Exponents of the power-laws to be used for fitting the background.
-                 (Default value = np.linspace(1,5,10))
+        bg_method : str
+                Method to approximate the background:
+                - 'grid': Grid of power-law functions E^(-r_i).
+                - 'taylor': Taylor expansion around r_max.
+                - 'chebyshev': Chebyshev / Minimax node exponential projection.
+                 (Default value = 'grid')
+        r_min : float
+                Minimum exponent for 'grid' or 'chebyshev' mode. (Default value = 1.0)
+        r_max : float
+                Maximum exponent for 'grid', 'taylor', or 'chebyshev' mode. (Default value = 8.0)
+        order : int
+                Number of background terms / columns across all 3 methods. (Default value = 10)
+        backgrounds : array or int or float or None
+                Exponents for 'grid' mode. If specified as integer/array, sets order accordingly.
+                 (Default value = None)
         model_type : one of EELSNMF.modelG.MODEL_REGISTRY
                  (Default value = "deltas")
         xsection_type : "Kohl" or "Zezhong"
@@ -176,16 +295,32 @@ class ModelG:
         }
         self.edges = list(self.fine_structure_ranges.keys())
 
-        if backgrounds is None:
-            self.backgrounds = np.array([0])
-        elif isinstance(backgrounds, int):
-            self.backgrounds = np.linspace(1, backgrounds, backgrounds)
-        elif hasattr(backgrounds, "__iter__"):
-            self.backgrounds = backgrounds
-        else:
-            raise Exception("Background argument invalid")
+        self.r_min = r_min
+        self.r_max = r_max
+        self.order = order
+        self.bg_method = bg_method
 
-        self.n_background = len(self.backgrounds)
+        match bg_method:
+            case "grid":
+                if backgrounds is None:
+                    self.backgrounds = np.linspace(self.r_min, self.r_max, self.order)
+                elif isinstance(backgrounds, int):
+                    self.backgrounds = np.linspace(1, backgrounds, backgrounds)
+                elif hasattr(backgrounds, "__iter__"):
+                    self.backgrounds = backgrounds
+                else:
+                    raise Exception(
+                        "Invalid backgrounds. Must be None, int, or iterable."
+                    )
+
+                self.n_background = len(self.backgrounds)
+            case "taylor" | "chebyshev":
+                self.n_background = self.order
+            case _:
+                raise ValueError(
+                    f"Invalid bg_method '{bg_method}'. Choose from 'grid', 'original', 'taylor', 'chebyshev'."
+                )
+
         self.xsection_type = xsection_type
 
         self._G0 = self.get_background_xsections_from_pyEELS()
@@ -229,7 +364,20 @@ class ModelG:
 
         self.xsections = np.array(xs)
 
-        bg = LinearBG(hl.get_spectrumshape(), rlist=self.backgrounds)
+        match self.bg_method:
+            case "grid":
+                bg = LinearBG(hl.get_spectrumshape(), rlist=self.backgrounds)
+            case "taylor":
+                bg = TaylorBG(
+                    hl.get_spectrumshape(), r_max=self.r_max, order=self.order
+                )
+            case "chebyshev":
+                bg = ChebyshevBG(
+                    hl.get_spectrumshape(),
+                    r_min=self.r_min,
+                    r_max=self.r_max,
+                    order=self.order,
+                )
 
         comp_list = [bg] + xs
 
@@ -259,7 +407,10 @@ class Deltas(BaseModel):
             Gf.append(I[:, ii:ff])
             Gf_sizes.append(Gf[-1].shape[-1])
 
-        Gf = np.concatenate(Gf, axis=1)
+        if len(Gf) > 0:
+            Gf = np.concatenate(Gf, axis=1)
+        else:
+            Gf = np.zeros((self.parent.energy_size, 0))
 
         self.Gf_sizes = Gf_sizes
         self.Gf = Gf
