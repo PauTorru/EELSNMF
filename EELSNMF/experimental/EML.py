@@ -56,7 +56,7 @@ def we_smooth(array, lmbda=1e2, order=2):
 class EML_Processing:
     """Class to manage the analysis of data from EML lab."""
 
-    def __init__(self, sh, sl, **kwargs):
+    def __init__(self, sh = None, sl= None, **kwargs):
         """Parameters
         ---------------
         sh : Core-loss spectrum image
@@ -81,9 +81,9 @@ class EML_Processing:
         self.denoise_applied = False
         self.deconvolution_applied = False
         self.deconvolved_edge = []
-
-        for key, value in kwargs.items():
-            setattr(self, key, value)
+        if kwargs:
+            for key, value in kwargs.items():
+                setattr(self, key, value)
 
     def save_results(self, dirname, metadata_average_s=None):
         """

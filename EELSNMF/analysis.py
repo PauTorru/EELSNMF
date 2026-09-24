@@ -61,10 +61,12 @@ class Analysis:
             self.G[:, self.model._edge_slices[edge]]
             @ self.W[self.model._edge_slices[edge], component_id]
         )
-
+        axes = {k: v for k, v in self._eaxis_parameters.items() if k != "axis"}
+        if "size" not in axes:
+            axes["size"]=self.X.shape[0]
         return hs.signals.Signal1D(
             data,
-            axes=[{k: v for k, v in self._eaxis_parameters.items() if k != "axis"}],
+            axes=[axes],
         )
 
     def quantify_components(self, method=None):
