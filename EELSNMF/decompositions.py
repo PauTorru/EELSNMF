@@ -219,3 +219,9 @@ class Decomposition(
 
         self.H = np.nan_to_num(self.H, nan=self.eps, posinf=self.eps, neginf=self.eps)
         self.W = np.nan_to_num(self.W, nan=self.eps, posinf=self.eps, neginf=self.eps)
+
+    def get_model_signal(self):
+
+        temp = self.cl.deepcopy()
+        temp.data = self.get_model()
+        return temp
